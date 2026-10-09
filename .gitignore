@@ -218,3 +218,72 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# ==============================================================================
+# Python & Bytecode
+# ==============================================================================
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual Environments
+venv/
+.venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+
+# ==============================================================================
+# Course Mandate: Never commit raw or processed datasets (ham veri depoya konmaz)
+# ==============================================================================
+data/raw/*
+!data/raw/.gitkeep
+data/processed/*
+!data/processed/.gitkeep
+data/external/*
+!data/external/.gitkeep
+
+# ==============================================================================
+# Model Checkpoints & Serialization Artifacts
+# ==============================================================================
+models/*.joblib
+models/*.pkl
+models/*.pt
+models/*.pth
+models/*.onnx
+*.db
+*.sqlite3
+
+# ==============================================================================
+# IDEs & System Metadata
+# ==============================================================================
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# ==============================================================================
+# Scratchpads & Interim Output
+# ==============================================================================
+outputs/scratch/
+*.log
