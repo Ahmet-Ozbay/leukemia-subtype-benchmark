@@ -25,5 +25,5 @@ pip install -r requirements.txt
 ### Verify the Environment
 
 ```bash
-python -c "import sklearn, shap, umap, optuna, GEOparse; print('Environment successfully initialized!')"
+python -c "import sklearn, shap, umap, optuna, GEOparse; print('Environment successfully initialized')"
 ```

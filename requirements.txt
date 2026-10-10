@@ -7,7 +7,7 @@
 numpy>=1.26.0,<2.0.0
 pandas>=2.2.0,<2.3.0
 scipy>=1.12.0,<1.14.0
-pyarrow>=14.0.0
+pyarrow>=14.0.0,<16.0.0
 
 # Classical Machine Learning & Pipelines
 scikit-learn>=1.4.0,<1.6.0
