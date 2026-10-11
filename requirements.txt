@@ -37,3 +37,6 @@ pyyaml>=6.0.1
 
 # Testing & Validation
 pytest>=8.0.0
+
+# Data Acquisition & Kaggle API
+kagglehub>=0.3.0
