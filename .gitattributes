@@ -1,0 +1,15 @@
+# Set default behavior to automatically normalize line endings to LF across platforms
+* text=auto eol=lf
+
+# Force binary handling for data and model artifacts
+*.parquet binary
+*.gz binary
+*.tar.gz binary
+*.zip binary
+*.png binary
+*.jpg binary
+*.pdf binary
+*.joblib binary
+*.pkl binary
+*.pt binary
+*.pth binary
