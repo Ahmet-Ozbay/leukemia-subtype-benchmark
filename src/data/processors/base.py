@@ -16,6 +16,7 @@ import pandas as pd
 from src.config import (
     EXPRESSION_CLIP_MAX,
     EXPRESSION_CLIP_MIN,
+    PROBE_DATA_DIR,
     PROCESSED_DATA_DIR,
     RAW_DATA_DIR,
 )
@@ -28,7 +29,7 @@ class BaseDatasetProcessor(ABC):
     label integrity checks, and serialized output contracts.
     """
 
-    def __init__(self, raw_dir: Path = RAW_DATA_DIR, out_dir: Path = PROCESSED_DATA_DIR):
+    def __init__(self, raw_dir: Path = RAW_DATA_DIR, out_dir: Path = PROBE_DATA_DIR):
         self.raw_dir = raw_dir
         self.out_dir = out_dir
         self.out_dir.mkdir(parents=True, exist_ok=True)

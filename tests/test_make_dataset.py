@@ -7,6 +7,7 @@ Verifies data contracts, quality controls, and harmonization for:
 - MILE Study / GSE13159 multi-class expansion cohort
 """
 
+from pathlib import Path
 from typing import Dict
 
 import numpy as np
@@ -17,6 +18,7 @@ from src.config import (
     EXPRESSION_CLIP_MAX,
     EXPRESSION_CLIP_MIN,
     LABEL_MAP,
+    PROBE_DATA_DIR,
     PROCESSED_DATA_DIR,
 )
 from src.data.make_dataset import (
@@ -26,15 +28,22 @@ from src.data.make_dataset import (
 )
 
 
+def _resolve_probe_path(name: str) -> Path:
+    cand = PROBE_DATA_DIR / name
+    if cand.exists():
+        return cand
+    return PROCESSED_DATA_DIR / name
+
+
 # ==============================================================================
 # Fixtures
 # ==============================================================================
 @pytest.fixture(scope="module")
 def golub_datasets() -> Dict[str, pd.DataFrame]:
     """Loads processed Golub Parquet files if present on disk."""
-    train_path = PROCESSED_DATA_DIR / "golub_train_38.parquet"
-    test_path = PROCESSED_DATA_DIR / "golub_test_34.parquet"
-    full_path = PROCESSED_DATA_DIR / "golub_full_72.parquet"
+    train_path = _resolve_probe_path("golub_train_38.parquet")
+    test_path = _resolve_probe_path("golub_test_34.parquet")
+    full_path = _resolve_probe_path("golub_full_72.parquet")
 
     if not (train_path.exists() and test_path.exists() and full_path.exists()):
         pytest.skip("Golub processed artifacts missing. Run make_dataset first.")
@@ -49,7 +58,7 @@ def golub_datasets() -> Dict[str, pd.DataFrame]:
 @pytest.fixture(scope="module")
 def armstrong_dataset() -> pd.DataFrame:
     """Loads processed Armstrong Parquet file if present on disk."""
-    armstrong_path = PROCESSED_DATA_DIR / "armstrong_full.parquet"
+    armstrong_path = _resolve_probe_path("armstrong_full.parquet")
     if not armstrong_path.exists():
         pytest.skip("Armstrong processed artifact missing. Run make_dataset first.")
 
@@ -59,7 +68,7 @@ def armstrong_dataset() -> pd.DataFrame:
 @pytest.fixture(scope="module")
 def mile_dataset() -> pd.DataFrame:
     """Loads processed MILE Parquet file if present on disk."""
-    mile_path = PROCESSED_DATA_DIR / "mile_full.parquet"
+    mile_path = _resolve_probe_path("mile_full.parquet")
     if not mile_path.exists():
         pytest.skip("MILE processed artifact missing. Run make_dataset first.")
 
