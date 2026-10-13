@@ -392,3 +392,47 @@ def test_mile_contract_and_sanitization(mile_dataset):
 def test_mile_unique_samples(mile_dataset):
     """Ensures GSM accession identifiers are unique in MILE."""
     assert mile_dataset.index.is_unique, "Duplicate sample IDs detected in MILE dataset."
+
+
+# ==============================================================================
+# 6. Modular Architecture & Invariant Tests
+# ==============================================================================
+def test_modular_processors_package_exports():
+    """Verifies that src.data.processors and src.data expose identical objects to make_dataset."""
+    import src.data as data_pkg
+    import src.data.make_dataset as make_dataset_mod
+    import src.data.processors as proc_pkg
+
+    symbols = [
+        "BaseDatasetProcessor",
+        "GolubProcessor",
+        "ArmstrongProcessor",
+        "MileProcessor",
+        "DATASET_REGISTRY",
+        "process_dataset",
+        "process_all_available",
+    ]
+
+    for sym in symbols:
+        mod_obj = getattr(make_dataset_mod, sym)
+        proc_obj = getattr(proc_pkg, sym)
+        pkg_obj = getattr(data_pkg, sym)
+
+        assert mod_obj is proc_obj, f"Symbol '{sym}' differs between make_dataset and processors."
+        assert mod_obj is pkg_obj, f"Symbol '{sym}' differs between make_dataset and src.data."
+
+
+def test_geo_utils_locate_soft_missing(tmp_path):
+    """Verifies locate_geo_soft_file raises informative FileNotFoundError when archive is missing."""
+    from src.data.processors.geo_utils import locate_geo_soft_file
+
+    empty_dir = tmp_path / "empty_cohort"
+    empty_dir.mkdir()
+
+    with pytest.raises(FileNotFoundError, match="GSE99999.*Run 'python -m src.data.download_data --dataset test'"):
+        locate_geo_soft_file(
+            search_dirs=[empty_dir],
+            pattern="GSE99999*.soft*",
+            cohort_name="GSE99999",
+            download_arg="test",
+        )
