@@ -21,19 +21,19 @@ Verified publication metadata, volumes, issue numbers, page ranges, and DOIs for
 
 [7] Q. H. Hoang, P. L. Nguyen, T. D. Do, A. V. Tran, T. A. Nguyen, T. T. Nguyen, and V. D. Nguyen, “Leukemia classification using principal component analysis and ensemble learning on gene expression data,” in Proc. 2023 International Conference on Advanced Technologies for Communications (ATC), Da Nang, Vietnam, 2023, pp. 286–291. https://doi.org/10.1109/ATC58710.2023.10318521
 
-[8] E. Abdullah Alabdulqader et al., “Improving prediction of blood cancer using leukemia microarray gene data and Chi2 features with weighted convolutional neural network,” Scientific Reports, vol. 14, no. 1, p. 14712, Jun. 2024. https://doi.org/10.1038/s41598-024-65315-7
+[8] E. Abdullah Alabdulqader et al., “Improving prediction of blood cancer using leukemia microarray gene data and Chi2 features with weighted convolutional neural network,” Scientific Reports, vol. 14, no. 1, p. 15625, Jul. 2024. https://doi.org/10.1038/s41598-024-65315-7
 
-[9] A. Wilson and M. R. Anwar, “The future of adaptive machine learning algorithms in high-dimensional data processing,” International Transactions on Artificial Intelligence (ITALIC), vol. 3, no. 1, pp. 45–58, Nov. 2024. https://doi.org/10.33050/italic.v3i1.602
+[9] A. Wilson and M. R. Anwar, “The future of adaptive machine learning algorithms in high-dimensional data processing,” International Transactions on Artificial Intelligence (ITALIC), vol. 3, no. 1, pp. 97–107, Nov. 2024. https://doi.org/10.33050/italic.v3i1.656
 
-[10] A. Salhi, R. Alshamrani, A. Althbiti, A. Ismail, M. Abd-ElRahman, and B. M. Hassan, “Optimizing high dimensional data classification with a hybrid AI driven feature selection framework and machine learning schema,” Scientific Reports, vol. 15, no. 1, p. 36720, Oct. 2025. https://doi.org/10.1038/s41598-025-78901-2
+[10] A. Salhi, R. Alshamrani, A. Althbiti, A. Ismail, M. Abd-ElRahman, and B. M. Hassan, “Optimizing high dimensional data classification with a hybrid AI driven feature selection framework and machine learning schema,” Scientific Reports, vol. 15, no. 1, p. 35038, Oct. 2025. https://doi.org/10.1038/s41598-025-08699-4
 
-[11] J. Gillariose, J. Joseph, and C. Chesneau, “Lasso and ridge regression: A comprehensive review of applications and developments in machine learning,” International Journal of Data Science and Analytics, vol. 19, no. 2, pp. 185–204, Feb. 2025. https://doi.org/10.1007/s41060-024-00624-9
+[11] J. Gillariose, J. Joseph, and C. Chesneau, “Lasso and ridge regression: A comprehensive review of applications and developments in machine learning,” International Journal of Data Science and Analytics, vol. 21, no. 1, art. no. 7, pp. 1–20, 2026. https://doi.org/10.1007/s41060-025-00957-y
 
-[12] B. Neekhra, D. Gupta, and P. P. Chakrabarti, “On the (in)significance of feature selection in high-dimensional datasets,” arXiv preprint arXiv:2307.03922, 2023; bioRxiv: 10.1101/2023.07.06.547942, 2025.
+[12] B. Neekhra, D. Gupta, and P. P. Chakrabarti, “On the (in)significance of feature selection in high-dimensional datasets,” arXiv preprint arXiv:2508.03593, Aug. 2025. https://doi.org/10.48550/arXiv.2508.03593
 
 [13] M. Z. Naser, “A review of machine learning with small and limited data,” Journal of Big Data, vol. 13, no. 1, p. 18, Jan. 2026. https://doi.org/10.1186/s40537-025-01346-9
 
-[14] N. Kandi, D. S. Charan, V. Gosu, V. C. S., and H. Y. Patil, “Analysis of leukemia classification using micro-array data with deep learning models,” Procedia Computer Science, vol. 283, pp. 245–254, Jan. 2026. https://doi.org/10.1016/j.procs.2026.01.034
+[14] N. Kandi, D. S. Charan, V. Gosu, V. C. S., and H. Y. Patil, “Analysis of leukemia classification using micro-array data with deep learning models,” Procedia Computer Science, vol. 283, pp. 306–317, Jan. 2026. https://doi.org/10.1016/j.procs.2026.06.118
 
-[15] F. Vello, S. Fortuna, and F. Fogolari, “Entropy estimation: From statistical physics to classification,” Entropy, vol. 28, no. 2, p. 145, Feb. 2026. https://doi.org/10.3390/e28020145
+[15] F. Vello, S. Fortuna, and F. Fogolari, “Entropy estimation: From statistical physics to classification,” International Journal of Molecular Sciences, vol. 27, no. 20, p. 9361, Oct. 2026. https://doi.org/10.3390/ijms27209361
 ```
