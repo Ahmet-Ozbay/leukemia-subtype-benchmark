@@ -11,7 +11,7 @@ Verified publication metadata, volumes, issue numbers, page ranges, and DOIs for
 
 [2] S. A. Armstrong et al., “MLL translocations specify a distinct gene expression profile that distinguishes a unique leukemia,” Nature Genetics, vol. 30, no. 1, pp. 41–47, Jan. 2002. https://doi.org/10.1038/ng765
 
-[3] M. Molla, M. Waddell, D. Page, and J. Shavlik, “Using machine learning to design and interpret gene-expression microarrays,” IEEE Intelligent Systems, vol. 19, no. 1, pp. 42–51, Jan.–Feb. 2004. https://doi.org/10.1109/MIS.2004.1265882
+[3] M. Molla, M. Waddell, D. Page, and J. Shavlik, “Using machine learning to design and interpret gene-expression microarrays,” AI Magazine, vol. 25, no. 1, pp. 23–44, 2004. https://doi.org/10.1609/aimag.v25i1.1745
 
 [4] R. Tabares-Soto et al., “A comparative study of machine learning and deep learning algorithms to classify cancer types based on microarray gene expression data,” PeerJ Computer Science, vol. 6, p. e270, Apr. 2020. https://doi.org/10.7717/peerj-cs.270
 
