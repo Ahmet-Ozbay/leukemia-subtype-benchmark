@@ -25,6 +25,7 @@ umap-learn>=0.5.5
 
 # Bioinformatics & GEO Acquisition (A3, Section 3)
 GEOparse>=2.0.4
+six>=1.16.0
 requests>=2.31.0
 
 # Deep Learning Baseline (Bonus B1)

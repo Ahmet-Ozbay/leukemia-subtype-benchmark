@@ -66,7 +66,7 @@ def download_golub(
         (target_dir / f).exists() and (target_dir / f).stat().st_size > 0
         for f in expected_files
     ):
-        print(f"[✓] {label} ({dataset_slug}) is already present in data/raw/{label}/. (Use --force to redownload)")
+        print(f"[OK] {label} ({dataset_slug}) is already present in data/raw/{label}/. (Use --force to redownload)")
         return True
 
     print("\n" + "-" * 60)
@@ -96,7 +96,7 @@ def download_golub(
             print(f"[!] Warning: Missing or empty expected file(s): {missing}", file=sys.stderr)
             return False
 
-        print(f"[✓] Successfully retrieved {label} ({dataset_slug}) into data/raw/{label}/")
+        print(f"[OK] Successfully retrieved {label} ({dataset_slug}) into data/raw/{label}/")
         return True
 
     except Exception as err:
@@ -125,7 +125,7 @@ def download_geo(geo_id: str, label: str, dest_dir: Path, force: bool = False) -
     ]
 
     if not force and len(valid_files) > 0:
-        print(f"[✓] {label} ({geo_id}) is already present in data/raw/{label}/. (Use --force to redownload)")
+        print(f"[OK] {label} ({geo_id}) is already present in data/raw/{label}/. (Use --force to redownload)")
         return True
 
     print("\n" + "-" * 60)
@@ -134,7 +134,7 @@ def download_geo(geo_id: str, label: str, dest_dir: Path, force: bool = False) -
 
     try:
         GEOparse.get_GEO(geo=geo_id, destdir=str(target_dir), silent=False)
-        print(f"[✓] Successfully retrieved {label} ({geo_id}) into data/raw/{label}/")
+        print(f"[OK] Successfully retrieved {label} ({geo_id}) into data/raw/{label}/")
         return True
     except Exception as err:
         print(f"[!] Failed to download {geo_id}: {err}", file=sys.stderr)
@@ -181,7 +181,7 @@ def main():
         print(f"\n[!] Pipeline execution finished with errors. Failed cohorts: {failed}", file=sys.stderr)
         sys.exit(1)
 
-    print("\n[✓] Pipeline execution finished successfully.")
+    print("\n[OK] Pipeline execution finished successfully.")
 
 
 if __name__ == "__main__":

@@ -28,6 +28,7 @@ dependencies:
 
       # --- Bioinformatics & GEO Data Retrieval (A3) ---
       - GEOparse>=2.0.4
+      - six>=1.16.0
       - requests>=2.31.0
 
       # --- Deep Learning Baseline (Bonus B1) ---

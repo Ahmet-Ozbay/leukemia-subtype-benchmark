@@ -60,7 +60,7 @@ def main():
     else:
         process_dataset(args.dataset)
 
-    print("\n[✓] Data preprocessing sequence finished.")
+    print("\n[OK] Data preprocessing sequence finished.")
 
 
 if __name__ == "__main__":

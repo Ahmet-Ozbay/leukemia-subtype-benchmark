@@ -289,7 +289,14 @@ outputs/scratch/
 *.log
 
 # ==============================================================================
-# Personal Notes & Task List
+# Personal Notes & Task List & AI Contexts & Prompts 
 # ==============================================================================
 ROADMAP.md
 PROJECT_REQUIREMENTS.md
+.agents/
+CONTEXT.md
+
+# ==============================================================================
+# Academic Paper Manuscripts (Overleaf / Local Drafts)
+# ==============================================================================
+paper/

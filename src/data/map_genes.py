@@ -156,7 +156,7 @@ def run_mapping_pipeline(
                 out_dir=HARMONIZED_DATA_DIR,
             )
 
-    print("\n[✓] Probe-to-gene mapping & harmonization pipeline finished successfully.")
+    print("\n[OK] Probe-to-gene mapping & harmonization pipeline finished successfully.")
 
 
 def main():
