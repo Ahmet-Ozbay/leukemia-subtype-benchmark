@@ -24,6 +24,8 @@ from src.config import (
 from src.data.make_dataset import (
     DATASET_REGISTRY,
     BaseDatasetProcessor,
+    GSE51082Processor,
+    GolubProcessor,
     process_dataset,
 )
 
@@ -52,6 +54,21 @@ def golub_datasets() -> Dict[str, pd.DataFrame]:
         "train": pd.read_parquet(train_path),
         "test": pd.read_parquet(test_path),
         "full": pd.read_parquet(full_path),
+    }
+
+
+@pytest.fixture(scope="module")
+def gse51082_datasets() -> Dict[str, pd.DataFrame]:
+    """Loads processed GSE51082 Parquet files if present on disk."""
+    eda_path = _resolve_probe_path("gse51082_full_eda.parquet")
+    aml_path = _resolve_probe_path("gse51082_all_aml.parquet")
+
+    if not (eda_path.exists() and aml_path.exists()):
+        pytest.skip("GSE51082 processed artifacts missing. Run make_dataset first.")
+
+    return {
+        "full_eda": pd.read_parquet(eda_path),
+        "all_aml": pd.read_parquet(aml_path),
     }
 
 
@@ -334,7 +351,67 @@ def test_golub_no_metadata_leaked_in_features(golub_datasets):
 
 
 # ==============================================================================
-# 4. Coustan-Smith et al. (GSE28497) Invariant Tests (Rubric A3 & F3)
+# 4. GSE51082 / Agarwal et al. (2014) Invariant Tests (Rubric A1, A3, F3)
+# ==============================================================================
+def test_gse51082_dimensions(gse51082_datasets):
+    """
+    Verifies GSE51082 sample counts and probe dimensionality:
+    - full_eda: 139 samples across 6 diagnostic classes
+    - all_aml: 66 samples (29 ALL, 37 AML)
+    - 22,283 probe sets (GPL96 / HG-U133A)
+    """
+    eda_df = gse51082_datasets["full_eda"]
+    aml_df = gse51082_datasets["all_aml"]
+
+    assert len(eda_df) == 139, f"Expected 139 total samples in full_eda, found {len(eda_df)}."
+    assert len(aml_df) == 66, f"Expected 66 samples in all_aml, found {len(aml_df)}."
+
+    meta_cols = {"label", "subtype", "tissue", "disease", "patient_id", "sample_id", "title"}
+    aml_probes = [c for c in aml_df.columns if c not in meta_cols]
+    assert len(aml_probes) == 22283, f"Expected 22283 probes, found {len(aml_probes)}."
+
+
+def test_gse51082_class_distributions(gse51082_datasets):
+    """
+    Validates GSE51082 class distributions:
+    - all_aml: exactly 29 ALL (label 0) and 37 AML (label 1)
+    - full_eda: 6 disease classes present
+    """
+    aml_df = gse51082_datasets["all_aml"]
+    counts = aml_df["label"].value_counts().to_dict()
+
+    assert counts[0] == 29, f"Expected 29 ALL samples, found {counts.get(0)}."
+    assert counts[1] == 37, f"Expected 37 AML samples, found {counts.get(1)}."
+
+    eda_df = gse51082_datasets["full_eda"]
+    disease_counts = eda_df["disease"].value_counts().to_dict()
+    assert set(disease_counts.keys()) == {"BCLL", "AML", "CML", "PRE B-ALL", "T-ALL", "MDS"}
+
+
+def test_gse51082_tissue_distribution(gse51082_datasets):
+    """Verifies tissue column exists with Bone marrow and Peripheral blood."""
+    aml_df = gse51082_datasets["all_aml"]
+    assert "tissue" in aml_df.columns
+    tissues = set(aml_df["tissue"].unique())
+    assert "Bone marrow" in tissues
+    assert "Peripheral blood" in tissues
+
+
+def test_gse51082_sanitization_and_rma_bounds(gse51082_datasets):
+    """Verifies that RMA log2 values are finite, numeric, and within log2 bounds (0.0 to 25.0)."""
+    aml_df = gse51082_datasets["all_aml"]
+    meta_cols = {"label", "subtype", "tissue", "disease", "patient_id", "sample_id", "title"}
+    feature_cols = [c for c in aml_df.columns if c not in meta_cols]
+    X = aml_df[feature_cols].values
+
+    assert not np.isnan(X).any(), "Processed GSE51082 matrix contains NaNs."
+    assert not np.isinf(X).any(), "Processed GSE51082 matrix contains Infs."
+    assert X.min() >= 0.0, f"Expression values below minimum log2 threshold (0.0): {X.min()}."
+    assert X.max() <= 25.0, f"Expression values above maximum log2 threshold (25.0): {X.max()}."
+
+
+# ==============================================================================
+# 5. Coustan-Smith et al. (GSE28497) Invariant Tests (Deprecated)
 # ==============================================================================
 def test_coustan_smith_contract_and_sanitization(coustan_smith_dataset):
     """Verifies data hygiene and metadata alignment for the Coustan-Smith cohort."""
@@ -415,6 +492,7 @@ def test_modular_processors_package_exports():
     symbols = [
         "BaseDatasetProcessor",
         "GolubProcessor",
+        "GSE51082Processor",
         "CoustanSmithProcessor",
         "MileProcessor",
         "DATASET_REGISTRY",

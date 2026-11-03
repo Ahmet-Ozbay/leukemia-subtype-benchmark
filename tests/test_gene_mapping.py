@@ -44,8 +44,14 @@ def golub_mapping() -> pd.DataFrame:
 
 
 @pytest.fixture(scope="module")
+def gse51082_mapping() -> pd.DataFrame:
+    """Fixture providing GSE51082 GPL96 annotation table."""
+    return load_annotation_mapping("gse51082", annotations_dir=ANNOTATIONS_DIR)
+
+
+@pytest.fixture(scope="module")
 def coustan_smith_mapping() -> pd.DataFrame:
-    """Fixture providing Coustan-Smith GPL96 annotation table."""
+    """Fixture providing Coustan-Smith GPL96 annotation table (deprecated fallback)."""
     return load_annotation_mapping("coustan_smith", annotations_dir=ANNOTATIONS_DIR)
 
 
@@ -92,11 +98,36 @@ def test_golub_annotation_coverage_and_schema(golub_mapping):
         assert len(diff) == 0, f"Unmapped feature probes found in Golub: {diff}"
 
 
+def test_gse51082_annotation_coverage_and_schema(gse51082_mapping):
+    """
+    Verifies that:
+    - GPL96 table contains exactly 22,283 probe sets.
+    - 100% of feature probes in processed GSE51082 parquet are present.
+    - Control probes are flagged as control and unmapped.
+    """
+    assert len(gse51082_mapping) == 22283, f"Expected 22283 GSE51082 probes, got {len(gse51082_mapping)}"
+
+    controls = gse51082_mapping[gse51082_mapping["probe_id"].str.startswith("AFFX-")]
+    assert len(controls) > 0
+    assert controls["is_control"].all()
+    assert not controls["is_mapped"].any()
+
+    gse_aml_p = PROBE_DATA_DIR / "gse51082_all_aml.parquet"
+    if not gse_aml_p.exists():
+        gse_aml_p = PROCESSED_DATA_DIR / "gse51082_all_aml.parquet"
+    if gse_aml_p.exists():
+        aml_df = pd.read_parquet(gse_aml_p)
+        meta_cols = {"label", "subtype", "tissue", "disease", "patient_id", "sample_id", "title"}
+        features = [c for c in aml_df.columns if c not in meta_cols]
+        assert len(features) == 22283
+        diff = set(features) - set(gse51082_mapping["probe_id"])
+        assert len(diff) == 0, f"Unmapped feature probes found in GSE51082: {diff}"
+
+
 def test_coustan_smith_annotation_coverage_and_schema(coustan_smith_mapping):
     """
     Verifies that:
     - GPL96 table contains exactly 22,283 probe sets.
-    - 100% of feature probes in processed Coustan-Smith parquet are present.
     - Control probes are flagged as control and unmapped.
     """
     assert len(coustan_smith_mapping) == 22283, f"Expected 22283 Coustan-Smith probes, got {len(coustan_smith_mapping)}"
@@ -105,16 +136,6 @@ def test_coustan_smith_annotation_coverage_and_schema(coustan_smith_mapping):
     assert len(controls) > 0
     assert controls["is_control"].all()
     assert not controls["is_mapped"].any()
-
-    cs_full_p = PROBE_DATA_DIR / "coustan_smith_full.parquet"
-    if not cs_full_p.exists():
-        cs_full_p = PROCESSED_DATA_DIR / "coustan_smith_full.parquet"
-    if cs_full_p.exists():
-        full_df = pd.read_parquet(cs_full_p)
-        features = [c for c in full_df.columns if c not in ["label", "subtype"]]
-        assert len(features) == 22283
-        diff = set(features) - set(coustan_smith_mapping["probe_id"])
-        assert len(diff) == 0, f"Unmapped feature probes found in Coustan-Smith: {diff}"
 
 
 # ==============================================================================
@@ -295,6 +316,56 @@ def test_collapse_dataset_preserves_metadata():
 # ==============================================================================
 # 4. End-to-End Harmonization Invariants
 # ==============================================================================
+def test_harmonize_gse51082_live(golub_mapping, gse51082_mapping):
+    """
+    Tests end-to-end cohort harmonization between Golub and GSE51082.
+    Verifies that harmonized matrices have identical columns in identical order.
+    """
+    g_path = PROBE_DATA_DIR / "golub_full_72.parquet"
+    if not g_path.exists():
+        g_path = PROCESSED_DATA_DIR / "golub_full_72.parquet"
+
+    gse_path = PROBE_DATA_DIR / "gse51082_all_aml.parquet"
+    if not gse_path.exists():
+        gse_path = PROCESSED_DATA_DIR / "gse51082_all_aml.parquet"
+
+    if not (g_path.exists() and gse_path.exists()):
+        pytest.skip("Processed Golub or GSE51082 files not found on disk.")
+
+    golub_df = pd.read_parquet(g_path)
+    gse_df = pd.read_parquet(gse_path)
+
+    g_harm, gse_harm = harmonize_cohort_genes(
+        golub_df=golub_df,
+        secondary_df=gse_df,
+        golub_mapping=golub_mapping,
+        secondary_mapping=gse51082_mapping,
+        secondary_name="gse51082",
+        strategy="max_variance",
+    )
+
+    # Identical columns in exact identical order
+    assert list(g_harm.columns) == list(gse_harm.columns)
+
+    # Sample counts preserved
+    assert len(g_harm) == 72
+    assert len(gse_harm) == 66
+
+    # Feature counts
+    feature_cols = [c for c in g_harm.columns if c not in ["label", "subtype"]]
+    assert len(feature_cols) == 5426
+
+    # No NaNs or Infs
+    assert not g_harm[feature_cols].isna().any().any()
+    assert not np.isinf(g_harm[feature_cols].to_numpy()).any()
+    assert not gse_harm[feature_cols].isna().any().any()
+    assert not np.isinf(gse_harm[feature_cols].to_numpy()).any()
+
+    # Files must be written to HARMONIZED_DATA_DIR
+    assert (HARMONIZED_DATA_DIR / "golub_harmonized_genes.parquet").exists()
+    assert (HARMONIZED_DATA_DIR / "gse51082_harmonized_genes.parquet").exists()
+
+
 def test_harmonize_cohort_genes_live(golub_mapping, coustan_smith_mapping):
     """
     Tests end-to-end cohort harmonization on processed datasets if present on disk.
@@ -370,22 +441,26 @@ def test_load_dataset_api():
     assert g_probes.shape == (72, 7131)
     g_train = load_dataset("golub", level="probes", split="train")
     assert g_train.shape == (38, 7131)
-    cs_probes = load_dataset("coustan_smith", level="probes")
-    assert cs_probes.shape == (103, 22285)
+
+    gse_aml = load_dataset("gse51082", level="probes")
+    assert gse_aml.shape == (66, 22286)
+    gse_eda = load_dataset("gse51082", level="probes", split="eda")
+    assert gse_eda.shape == (139, 22288)
 
     # Gene level
     g_genes = load_dataset("golub", level="genes", split="full")
     assert g_genes.shape[0] == 72
     assert "label" in g_genes.columns
-    cs_genes = load_dataset("coustan_smith", level="genes")
-    assert cs_genes.shape[0] == 103
+
+    gse_genes = load_dataset("gse51082", level="genes")
+    assert gse_genes.shape[0] == 66
 
     # Harmonized level
     g_harm = load_dataset("golub", level="harmonized")
-    cs_harm = load_dataset("coustan_smith", level="harmonized")
-    assert list(g_harm.columns) == list(cs_harm.columns)
+    gse_harm = load_dataset("gse51082", level="harmonized")
+    assert list(g_harm.columns) == list(gse_harm.columns)
     assert g_harm.shape == (72, 5428)
-    assert cs_harm.shape == (103, 5428)
+    assert gse_harm.shape == (66, 5428)
 
     # Invalid arguments raise ValueError
     with pytest.raises(ValueError, match="Unknown cohort"):

@@ -13,6 +13,7 @@ from src.data.download_data import (
     DOWNLOADERS,
     download_geo,
     download_golub,
+    download_gse51082,
     ensure_kaggle_token,
 )
 
@@ -141,10 +142,21 @@ def test_download_geo_force_unlinks_existing(tmp_path, monkeypatch):
     assert not old_file.exists()
 
 
+def test_download_gse51082_cache_hit(tmp_path):
+    """If GSE51082 matrix file exists with size > 1KB, skips download and returns True."""
+    dest_dir = tmp_path
+    gse_dir = dest_dir / "gse51082"
+    gse_dir.mkdir(parents=True)
+    matrix_file = gse_dir / "GSE51082-GPL96_series_matrix.txt.gz"
+    matrix_file.write_bytes(b"x" * 2048)
+
+    assert download_gse51082(dest_dir=dest_dir, force=False) is True
+
+
 # ==============================================================================
 # 4. Dispatcher Registry Completeness
 # ==============================================================================
 def test_downloaders_registry_completeness():
-    """Ensures all three required cohorts are present in the DOWNLOADERS dispatch table."""
-    expected_cohorts = {"golub", "coustan_smith", "mile"}
+    """Ensures all required cohorts are present in the DOWNLOADERS dispatch table."""
+    expected_cohorts = {"golub", "gse51082", "coustan_smith", "mile"}
     assert set(DOWNLOADERS.keys()) == expected_cohorts
