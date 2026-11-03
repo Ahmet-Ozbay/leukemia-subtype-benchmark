@@ -102,7 +102,7 @@ def plot_dimensionality_reduction(
         explained_var[:n_bars],
         color="#555555" if style_cfg.get("style") == "ticks" else palette.get(0, "#333333"),
         alpha=0.65,
-        label="Component Variance (%)",
+        label="Component Var. (%)",
     )
     ax_cum.plot(
         x_idx,
@@ -111,18 +111,26 @@ def plot_dimensionality_reduction(
         marker="o",
         linewidth=1.4,
         markersize=4,
-        label="Cumulative Variance (%)",
+        label="Cumulative Var. (%)",
     )
-    ax_scree.set_title("(a) PCA Scree Plot", fontweight="bold")
-    ax_scree.set_xlabel("Principal Component (PC)")
-    ax_scree.set_ylabel("Component Variance (%)")
-    ax_cum.set_ylabel("Cumulative Variance (%)")
+    ax_scree.set_title("(a) PCA Scree Plot", fontweight="bold", fontsize=8, pad=18)
+    ax_scree.set_xlabel("Principal Component (PC)", fontsize=7.5)
+    ax_scree.set_ylabel("Component Variance (%)", fontsize=7.5)
+    ax_cum.set_ylabel("Cumulative Variance (%)", fontsize=7.5)
     ax_scree.set_xticks(x_idx[::2] if len(x_idx) > 4 else x_idx)
     ax_cum.grid(False)
 
     lines_1, labels_1 = ax_scree.get_legend_handles_labels()
     lines_2, labels_2 = ax_cum.get_legend_handles_labels()
-    ax_scree.legend(lines_1 + lines_2, labels_1 + labels_2, loc="center right", fontsize=7)
+    ax_scree.legend(
+        lines_1 + lines_2,
+        labels_1 + labels_2,
+        loc="lower center",
+        bbox_to_anchor=(0.5, 1.01),
+        ncol=2,
+        frameon=False,
+        fontsize=6.8,
+    )
 
     # Helper function for 2D projections
     def render_projection(ax, coords, title, xlabel, ylabel):
@@ -141,10 +149,16 @@ def plot_dimensionality_reduction(
                 edgecolor="black",
                 linewidth=0.5,
             )
-        ax.set_title(title, fontweight="bold")
-        ax.set_xlabel(xlabel)
-        ax.set_ylabel(ylabel)
-        ax.legend(loc="best", fontsize=7.5)
+        ax.set_title(title, fontweight="bold", fontsize=8, pad=18)
+        ax.set_xlabel(xlabel, fontsize=7.5)
+        ax.set_ylabel(ylabel, fontsize=7.5)
+        ax.legend(
+            loc="lower center",
+            bbox_to_anchor=(0.5, 1.01),
+            ncol=2,
+            frameon=False,
+            fontsize=6.8,
+        )
 
     # --- Panel B: PCA 2D ---
     render_projection(

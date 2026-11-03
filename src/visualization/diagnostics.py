@@ -80,10 +80,16 @@ def render_train_test_shift(
         edgecolor="black",
         linewidth=0.5,
     )
-    ax.set_title("(a) Golub Train vs. Independent Test Shift", fontweight="bold", fontsize=8)
+    ax.set_title("(a) Golub Train vs. Independent Test Shift", fontweight="bold", fontsize=8, pad=18)
     ax.set_xlabel(f"PC1 ({pc1_var:.1f}%)", fontsize=7.5)
     ax.set_ylabel(f"PC2 ({pc2_var:.1f}%)", fontsize=7.5)
-    ax.legend(loc="upper right", fontsize=6.5)
+    ax.legend(
+        loc="lower center",
+        bbox_to_anchor=(0.5, 1.01),
+        ncol=2,
+        frameon=False,
+        fontsize=6.8,
+    )
 
     return pc1_var, pc2_var
 
@@ -143,10 +149,16 @@ def render_cross_platform_pca(
         linewidth=0.5,
     )
     shared_genes_count = X_p_raw.shape[1]
-    ax.set_title(f"(b) Cross-Platform Harmonization ({shared_genes_count:,} Genes)", fontweight="bold", fontsize=8)
+    ax.set_title(f"(b) Cross-Platform Harmonization ({shared_genes_count:,} Genes)", fontweight="bold", fontsize=8, pad=18)
     ax.set_xlabel(f"PC1 ({pc1_var:.1f}%)", fontsize=7.5)
     ax.set_ylabel(f"PC2 ({pc2_var:.1f}%)", fontsize=7.5)
-    ax.legend(loc="upper right", fontsize=6.5)
+    ax.legend(
+        loc="lower center",
+        bbox_to_anchor=(0.5, 1.01),
+        ncol=2,
+        frameon=False,
+        fontsize=6.8,
+    )
 
     return pc1_var, pc2_var
 
@@ -189,34 +201,30 @@ def render_tissue_confounding(
     ax.barh(y_pos, pb_pcts, left=bm_pcts, color=pb_color, edgecolor="black", linewidth=0.5, height=height, label="Peripheral Blood (PB)")
     ax.barh(y_pos, ln_pcts, left=np.array(bm_pcts) + np.array(pb_pcts), color=ln_color, edgecolor="black", linewidth=0.5, height=height, label="Lymph Node (LN)")
 
-    font_adj = 0.0 if not compact else 0.5
-    ax.set_yticks(y_pos)
-    ax.set_yticklabels([g[0] for g in groups], fontsize=7 + font_adj, fontweight="medium")
-    ax.set_xlabel("Tissue Proportion (%)", fontsize=7.5 + font_adj)
-    ax.set_xlim(0, 100)
-    ax.set_title(f"{title_prefix} Tissue Confounding Diagnostic", fontweight="bold", fontsize=8 + font_adj)
-    ax.legend(loc="lower left", fontsize=6.0 + font_adj, framealpha=0.9)
-
     # 2x2 Fisher's exact test on acute leukemia modeling cohort (ALL vs. AML)
     # ALL: 25 BM, 4 PB | AML: 30 BM, 7 PB
     table_model = [[25, 4], [30, 7]]
     fisher_res = stats.fisher_exact(table_model)
 
-    stats_text = (
-        f"ALL vs. AML Modeling:\n"
-        f"  BM: 86.2% vs. 81.1%\n"
-        f"  Fisher's Exact: OR={fisher_res.statistic:.2f}, p={fisher_res.pvalue:.3f} (n.s.)\n"
-        f"  -> No tissue confounding in ALL/AML\n"
-        f"*Excluded: BCLL (92.7% PB), MDS (100% BM)"
+    font_adj = 0.0 if not compact else 0.5
+    ax.set_yticks(y_pos)
+    ax.set_yticklabels([g[0] for g in groups], fontsize=7 + font_adj, fontweight="medium")
+    ax.set_xlabel("Tissue Proportion (%)", fontsize=7.5 + font_adj)
+    ax.set_xlim(0, 100)
+    ax.set_ylim(-0.55, 4.55)
+    ax.set_title(
+        f"{title_prefix} Tissue Confounding Diagnostic\n"
+        f"(ALL vs. AML: Fisher p = {fisher_res.pvalue:.3f}, n.s.)",
+        fontweight="bold",
+        fontsize=7.8 + font_adj,
+        pad=18,
     )
-    ax.text(
-        0.04,
-        0.58,
-        stats_text,
-        transform=ax.transAxes,
-        fontsize=5.5 + font_adj,
-        verticalalignment="top",
-        bbox=dict(boxstyle="round,pad=0.25", facecolor="white", edgecolor="#666666", alpha=0.92),
+    ax.legend(
+        loc="lower center",
+        bbox_to_anchor=(0.5, 1.01),
+        ncol=3,
+        frameon=False,
+        fontsize=6.2 + font_adj,
     )
 
     return fisher_res
@@ -282,19 +290,16 @@ def render_multiclass_landscape(
         )
 
     font_adj = 0.0 if not compact else 0.5
-    ax.annotate(
-        "MDS -> AML continuity",
-        xy=(50, -5),
-        xytext=(45, -45),
-        fontsize=5.5 + font_adj,
-        arrowprops=dict(arrowstyle="->", lw=0.6, color="#333333"),
-        bbox=dict(boxstyle="round,pad=0.2", facecolor="white", edgecolor="#888888", alpha=0.9),
-    )
-
-    ax.set_title(f"{title_prefix} 6-Class Global Landscape (n={len(df_eda)})", fontweight="bold", fontsize=8 + font_adj)
+    ax.set_title(f"{title_prefix} 6-Class Global Landscape (n={len(df_eda)})", fontweight="bold", fontsize=8 + font_adj, pad=28)
     ax.set_xlabel(f"PC1 ({pc1_var:.1f}%)", fontsize=7.5 + font_adj)
     ax.set_ylabel(f"PC2 ({pc2_var:.1f}%)", fontsize=7.5 + font_adj)
-    ax.legend(loc="upper left", fontsize=5.5 + font_adj, framealpha=0.9, ncol=1)
+    ax.legend(
+        loc="lower center",
+        bbox_to_anchor=(0.5, 1.01),
+        ncol=3,
+        frameon=False,
+        fontsize=5.5 + font_adj,
+    )
 
     return pc1_var, pc2_var
 
@@ -322,7 +327,7 @@ def plot_batch_effect_diagnostics(
     if style_cfg is None:
         style_cfg = apply_style("grayscale")
 
-    fig, axes = plt.subplots(2, 2, figsize=(7.2, 5.6))
+    fig, axes = plt.subplots(2, 2, figsize=(7.2, 5.8))
 
     render_train_test_shift(axes[0, 0], df_train, df_test, style_cfg)
     render_cross_platform_pca(axes[0, 1], df_harm_primary, df_harm_secondary, style_cfg, sec_name=sec_name)
@@ -345,7 +350,7 @@ def plot_tissue_and_landscape(
     if style_cfg is None:
         style_cfg = apply_style("grayscale")
 
-    fig, axes = plt.subplots(1, 2, figsize=(7.2, 3.5))
+    fig, axes = plt.subplots(1, 2, figsize=(7.2, 3.6))
 
     render_tissue_confounding(axes[0], style_cfg, title_prefix="(a)", compact=True)
     render_multiclass_landscape(axes[1], df_eda, style_cfg, title_prefix="(b)", compact=True)

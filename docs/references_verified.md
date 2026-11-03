@@ -1,6 +1,6 @@
 # Semester Project - Bibliography Reference List
 
-Verified publication metadata, volumes, issue numbers, page ranges, and DOIs for references in the leukemia benchmark study:
+Verified publication metadata, volumes, issue numbers, page ranges, urls and DOIs for references in the leukemia benchmark study:
 
 ---
 

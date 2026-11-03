@@ -73,7 +73,7 @@ def plot_expression_distributions(
     sample_gse_rma = rng.choice(full_gse_rma, size=n_sample_gse, replace=False)
     sample_gse_std = (sample_gse_rma - np.mean(full_gse_rma)) / std_gse
 
-    fig, axes = plt.subplots(2, 2, figsize=(7.2, 5.0))
+    fig, axes = plt.subplots(2, 2, figsize=(7.2, 5.2))
 
     palette = style_cfg["palette"]
     golub_color = palette.get("Golub", "#222222")
@@ -90,18 +90,15 @@ def plot_expression_distributions(
         stat="density",
         alpha=0.3,
     )
-    axes[0, 0].set_title("(a) Golub (Hu6800) - Raw Intensity", fontweight="bold")
+    axes[0, 0].set_title(
+        f"(a) Golub (Hu6800) - Raw Intensity\n(Skew: {skew_g:.2f}, Median: {median_g:.1f})",
+        fontweight="bold",
+        fontsize=8,
+    )
     axes[0, 0].set_xlabel("Raw Fluorescence Intensity")
     axes[0, 0].set_ylabel(r"Density ($\times 10^{-3}$)")
     axes[0, 0].set_xlim(0, 16500)
     axes[0, 0].yaxis.set_major_formatter(ticker.FuncFormatter(lambda y, _: f"{y * 1e3:.1f}"))
-    axes[0, 0].annotate(
-        f"Skewness: {skew_g:.2f}\nMedian: {median_g:.1f}",
-        xy=(0.58, 0.65),
-        xycoords="axes fraction",
-        fontsize=8,
-        bbox=dict(boxstyle="round,pad=0.3", fc="white", ec="gray", alpha=0.8),
-    )
 
     # (b) GSE51082 RMA (Pre-normalized log2)
     sns.histplot(
@@ -114,17 +111,14 @@ def plot_expression_distributions(
         stat="density",
         alpha=0.3,
     )
-    axes[0, 1].set_title(r"(b) Agarwal / GSE51082 - RMA $\log_2$ Intensity", fontweight="bold")
+    axes[0, 1].set_title(
+        rf"(b) Agarwal / GSE51082 - RMA $\log_2$ Intensity" + "\n" + f"(Skew: {skew_gse:.2f}, Median: {median_gse:.1f})",
+        fontweight="bold",
+        fontsize=8,
+    )
     axes[0, 1].set_xlabel(r"RMA $\log_2$ Normalized Intensity")
     axes[0, 1].set_ylabel("Density")
     axes[0, 1].set_xlim(3, 15)
-    axes[0, 1].annotate(
-        f"Skewness: {skew_gse:.2f}\nMedian: {median_gse:.1f}",
-        xy=(0.58, 0.65),
-        xycoords="axes fraction",
-        fontsize=8,
-        bbox=dict(boxstyle="round,pad=0.3", fc="white", ec="gray", alpha=0.8),
-    )
 
     # (c) Golub Log2
     sns.histplot(
@@ -137,17 +131,14 @@ def plot_expression_distributions(
         stat="density",
         alpha=0.3,
     )
-    axes[1, 0].set_title(r"(c) Golub - $\log_2(x + 1)$ Transform", fontweight="bold")
+    axes[1, 0].set_title(
+        rf"(c) Golub - $\log_2(x + 1)$ Transform" + "\n" + f"(Skew: {skew_g_log:.2f}, Std: {std_g_log:.2f})",
+        fontweight="bold",
+        fontsize=8,
+    )
     axes[1, 0].set_xlabel(r"$\log_2(\text{Intensity} + 1)$")
     axes[1, 0].set_ylabel("Density")
     axes[1, 0].set_xlim(4, 15)
-    axes[1, 0].annotate(
-        f"Skewness: {skew_g_log:.2f}\nStd: {std_g_log:.2f}",
-        xy=(0.58, 0.65),
-        xycoords="axes fraction",
-        fontsize=8,
-        bbox=dict(boxstyle="round,pad=0.3", fc="white", ec="gray", alpha=0.8),
-    )
 
     # (d) GSE51082 Standardized
     sns.histplot(
@@ -160,17 +151,14 @@ def plot_expression_distributions(
         stat="density",
         alpha=0.3,
     )
-    axes[1, 1].set_title(r"(d) Agarwal / GSE51082 - Standardized (Z-Score)", fontweight="bold")
+    axes[1, 1].set_title(
+        rf"(d) Agarwal / GSE51082 - Standardized (Z-Score)" + "\n" + f"(Skew: {skew_gse:.2f}, Std: 1.00)",
+        fontweight="bold",
+        fontsize=8,
+    )
     axes[1, 1].set_xlabel("Standardized Z-Score")
     axes[1, 1].set_ylabel("Density")
     axes[1, 1].set_xlim(-4, 4)
-    axes[1, 1].annotate(
-        f"Skewness: {skew_gse:.2f}\nStd: {1.00:.2f}",
-        xy=(0.58, 0.65),
-        xycoords="axes fraction",
-        fontsize=8,
-        bbox=dict(boxstyle="round,pad=0.3", fc="white", ec="gray", alpha=0.8),
-    )
 
     plt.tight_layout()
     return fig
