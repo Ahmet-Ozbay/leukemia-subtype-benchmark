@@ -6,7 +6,7 @@ This document is prepared in accordance with the Semester Project Guide (Section
 
 | Tool and Version | Scope and Objective | Affected Modules / Files | Human Verification and Modifications |
 |---|---|---|---|
-| **Google Gemini 2.0 Flash / Pro (Antigravity Agent v2026.3)** | Data ingestion, preprocessing, probe-to-gene mapping, statistical EDA engine (`eda.py`), and automated testing suite | `src/data/`, `src/features/`, `src/visualization/eda.py`, `tests/` | Code reviewed line by line, platform encoding issues resolved, exact matrix medians verified, dual Welch/MWU tests implemented, and verified using 47 automated pytest tests (45 passed, 2 skipped). |
+| **Google Gemini 2.0 Flash / Pro (Antigravity Agent v2026.3)** | Data ingestion, preprocessing, probe-to-gene mapping, statistical EDA engine (`eda.py`), and automated testing suite | `src/data/`, `src/features/`, `src/visualization/eda.py`, `tests/` | Code reviewed line by line, platform encoding issues resolved, exact matrix medians verified, dual Welch/MWU tests implemented, GSE51082 RMA log2 adaptive preprocessing added, and verified using 54 automated pytest tests (49 passed, 5 skipped). |
 | **Google Gemini 1.5 Pro / 2.0 Flash (LLM)** | Systematic literature review synthesis, research questions framing (two-phased RQ3), and IEEE conference paper formatting | `paper/midterm/en/main.tex`, `paper/midterm/tr/main.tex`, `CONTEXT.md` | All referenced articles cross-checked against publisher DOIs and GEO accessions; peer-reviewed and preprint statuses accurately distinguished; exact page budgets enforced. |
 
 ## 2. Detailed Interaction & Prompt Log
@@ -25,6 +25,11 @@ This document is prepared in accordance with the Semester Project Guide (Section
 - **User Prompt Summary:** Reconcile all AI review findings: align Figure 3 with dual Welch's t-test and Mann-Whitney U test and strict Benjamini-Hochberg FDR < 0.001 data-driven filtering; fix Figure 1 exact matrix median; reframe Figure 4 as exploratory cohort-wise standardized PCA; divide RQ3 into transcriptomic harmonization (GSE28497) vs. supervised transfer (MILE); document Coustan-Smith sample filtering breakdown; add task column to literature table; and cite Haferlach et al. (2010).
 - **Model Output Summary:** Refactored `src/visualization/eda.py`, updated `references.bib`, and aligned English and Turkish IEEE papers.
 - **Student Verification:** Recompiled all figures, passed all 47 pytest tests, and compiled both English and Turkish manuscripts with 0 errors to exactly 6 pages.
+
+### Session 4: External Validation Cohort Replacement (GSE51082 Integration)
+- **User Prompt Summary:** Integrate GSE51082 (Agarwal et al. 2014, GPL96 / HG-U133A) as the primary similar dataset for ALL vs AML classification to replace the AML-deficient GSE28497 cohort. Analyze tissue confounding, handle RMA log2 normalization differences without linear clipping, organize dual outputs (66-sample modeling subset vs. 139-sample 6-class exploratory cohort), collapse to HUGO genes, and update tests.
+- **Model Output Summary:** Implemented `GSE51082Processor` (`src/data/processors/gse51082.py`), updated download pipeline (`download_gse51082`), adaptive normalization in `BaseDatasetProcessor`, GPL96 annotation extraction and cross-platform harmonizer, updated `eda.py` and `style.py`, and expanded unit test suite.
+- **Student Verification:** Verified RMA log2 scaling invariant ([0.0, 25.0]), confirmed balanced tissue distribution (86.2% BM in ALL vs. 81.1% BM in AML, Fisher exact p=0.744), generated 5,426 shared genes with 100% biomarker preservation, and verified all 54 pytest test cases (49 passed, 5 skipped, 0 failed).
 
 ## 3. Originality and Ethics Statement
 The experimental hypotheses, methodology design, research questions, code verification, and final paper conclusions remain the intellectual and scientific responsibility of the author.
