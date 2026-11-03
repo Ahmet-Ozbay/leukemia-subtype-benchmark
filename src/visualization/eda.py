@@ -37,8 +37,12 @@ from src.visualization.style import apply_style
 
 
 def get_feature_and_label_matrices(df: pd.DataFrame) -> Tuple[pd.DataFrame, pd.Series]:
-    """Separates numeric gene/probe expression columns from metadata ['label', 'subtype']."""
-    meta_cols = [c for c in ["label", "subtype", "sample_id"] if c in df.columns]
+    """Separates numeric gene/probe expression columns from metadata ['label', 'subtype', etc.]."""
+    meta_cols = [
+        c
+        for c in ["label", "subtype", "sample_id", "tissue", "disease", "patient_id", "title"]
+        if c in df.columns
+    ]
     feature_cols = [c for c in df.columns if c not in meta_cols]
     X = df[feature_cols].copy()
     y = df["label"].copy()
@@ -61,37 +65,36 @@ def plot_figure_1_distributions(
     print("[*] Generating Figure 1: Expression Distributions...")
 
     golub_df = load_dataset("golub", level="probes", split="full")
-    coustan_smith_df = load_dataset("coustan_smith", level="probes", split="full")
+    gse_df = load_dataset("gse51082", level="probes", split="all_aml")
 
     X_golub_raw, _ = get_feature_and_label_matrices(golub_df)
-    X_cs_raw, _ = get_feature_and_label_matrices(coustan_smith_df)
+    X_gse_raw, _ = get_feature_and_label_matrices(gse_df)
 
     # Compute exact full-cohort statistics for reporting
     full_g_raw = X_golub_raw.values.ravel()
-    full_cs_raw = X_cs_raw.values.ravel()
+    full_gse_rma = X_gse_raw.values.ravel()
     median_g = np.median(full_g_raw)
     skew_g = stats.skew(full_g_raw)
-    median_cs = np.median(full_cs_raw)
-    skew_cs = stats.skew(full_cs_raw)
+    median_gse = np.median(full_gse_rma)
+    skew_gse = stats.skew(full_gse_rma)
 
     full_g_log = np.log2(full_g_raw + 1.0)
-    full_cs_log = np.log2(full_cs_raw + 1.0)
     std_g_log = np.std(full_g_log)
     skew_g_log = stats.skew(full_g_log)
-    std_cs_log = np.std(full_cs_log)
-    skew_cs_log = stats.skew(full_cs_log)
+    std_gse = np.std(full_gse_rma)
 
     # Sample representative values (subset of 50,000 measurements for smooth KDE calculation)
     np.random.seed(42)
     sample_g_raw = np.random.choice(full_g_raw, size=50000, replace=False)
     sample_g_log = np.log2(sample_g_raw + 1.0)
 
-    sample_cs_raw = np.random.choice(full_cs_raw, size=50000, replace=False)
-    sample_cs_log = np.log2(sample_cs_raw + 1.0)
+    sample_gse_rma = np.random.choice(full_gse_rma, size=50000, replace=False)
+    sample_gse_std = (sample_gse_rma - np.mean(full_gse_rma)) / std_gse
 
     fig, axes = plt.subplots(2, 2, figsize=(7.2, 5.0), sharey="row")
 
     palette = style_cfg["palette"]
+    gse_color = palette.get("GSE51082", palette.get("Coustan-Smith", "#888888"))
 
     # Golub Raw
     sns.histplot(
@@ -116,22 +119,22 @@ def plot_figure_1_distributions(
         bbox=dict(boxstyle="round,pad=0.3", fc="white", ec="gray", alpha=0.8),
     )
 
-    # Coustan-Smith Raw
+    # GSE51082 RMA (Pre-normalized log2)
     sns.histplot(
-        sample_cs_raw,
+        sample_gse_rma,
         bins=50,
         kde=True,
         ax=axes[0, 1],
-        color=palette["Coustan-Smith"],
-        edgecolor=palette["Coustan-Smith"],
+        color=gse_color,
+        edgecolor=gse_color,
         stat="density",
         alpha=0.3,
     )
-    axes[0, 1].set_title("(b) Coustan-Smith (HG-U133A) - Raw Intensity", fontweight="bold")
-    axes[0, 1].set_xlabel("Raw Fluorescence Intensity")
-    axes[0, 1].set_xlim(0, 16500)
+    axes[0, 1].set_title(r"(b) Agarwal / GSE51082 - RMA $\log_2$ Intensity", fontweight="bold")
+    axes[0, 1].set_xlabel(r"RMA $\log_2$ Normalized Intensity")
+    axes[0, 1].set_xlim(3, 15)
     axes[0, 1].annotate(
-        f"Skewness: {skew_cs:.2f}\nMedian: {median_cs:.1f}",
+        f"Skewness: {skew_gse:.2f}\nMedian: {median_gse:.1f}",
         xy=(0.58, 0.65),
         xycoords="axes fraction",
         fontsize=8,
@@ -161,22 +164,22 @@ def plot_figure_1_distributions(
         bbox=dict(boxstyle="round,pad=0.3", fc="white", ec="gray", alpha=0.8),
     )
 
-    # Coustan-Smith Log2
+    # GSE51082 Standardized
     sns.histplot(
-        sample_cs_log,
+        sample_gse_std,
         bins=50,
         kde=True,
         ax=axes[1, 1],
-        color=palette["Coustan-Smith"],
-        edgecolor=palette["Coustan-Smith"],
+        color=gse_color,
+        edgecolor=gse_color,
         stat="density",
         alpha=0.3,
     )
-    axes[1, 1].set_title(r"(d) Coustan-Smith - $\log_2(x + 1)$ Transform", fontweight="bold")
-    axes[1, 1].set_xlabel(r"$\log_2(\text{Intensity} + 1)$")
-    axes[1, 1].set_xlim(4, 15)
+    axes[1, 1].set_title(r"(d) Agarwal / GSE51082 - Standardized (Z-Score)", fontweight="bold")
+    axes[1, 1].set_xlabel("Standardized Z-Score")
+    axes[1, 1].set_xlim(-4, 4)
     axes[1, 1].annotate(
-        f"Skewness: {skew_cs_log:.2f}\nStd: {std_cs_log:.2f}",
+        f"Skewness: {skew_gse:.2f}\nStd: {1.00:.2f}",
         xy=(0.58, 0.65),
         xycoords="axes fraction",
         fontsize=8,
@@ -534,23 +537,32 @@ def plot_figure_4_batch_effects(
     ax_left.set_ylabel(f"PC2 ({pca_split.explained_variance_ratio_[1]*100:.1f}%)")
     ax_left.legend(loc="upper right", fontsize=7.5)
 
-    # --- Right: Cross-Platform Batch Effect (Golub vs. Coustan-Smith on 5,426 shared genes) ---
+    # --- Right: Cross-Platform Batch Effect (Golub vs. Agarwal/GSE51082 on 5,426 shared genes) ---
     df_harm_g = load_dataset("golub", level="harmonized")
-    df_harm_cs = load_dataset("coustan_smith", level="harmonized")
+    try:
+        df_harm_sec = load_dataset("gse51082", level="harmonized")
+        sec_name = "Agarwal (GSE51082)"
+        sec_color = palette.get("GSE51082", palette.get("Coustan-Smith", "#888888"))
+        sec_marker = markers.get("GSE51082", markers.get("Coustan-Smith", "D"))
+    except FileNotFoundError:
+        df_harm_sec = load_dataset("coustan_smith", level="harmonized")
+        sec_name = "Coustan-Smith (GSE28497)"
+        sec_color = palette.get("Coustan-Smith", "#888888")
+        sec_marker = markers.get("Coustan-Smith", "D")
 
     X_g_raw, _ = get_feature_and_label_matrices(df_harm_g)
-    X_cs_raw, _ = get_feature_and_label_matrices(df_harm_cs)
+    X_sec_raw, _ = get_feature_and_label_matrices(df_harm_sec)
 
-    # Standardize within cohort to demonstrate alignment vs platform separation
+    # Standardize within cohort: Golub requires log2(x+1); GSE51082 is already RMA log2
     X_g_s = StandardScaler().fit_transform(np.log2(X_g_raw + 1.0))
-    X_cs_s = StandardScaler().fit_transform(np.log2(X_cs_raw + 1.0))
+    X_sec_s = StandardScaler().fit_transform(X_sec_raw)
 
-    X_combined = np.vstack([X_g_s, X_cs_s])
+    X_combined = np.vstack([X_g_s, X_sec_s])
     pca_cross = PCA(n_components=2, random_state=42)
     X_cross_pca = pca_cross.fit_transform(X_combined)
 
     n_g = len(df_harm_g)
-    n_cs = len(df_harm_cs)
+    n_sec = len(df_harm_sec)
 
     ax_right = axes[1]
     ax_right.scatter(
@@ -567,9 +579,9 @@ def plot_figure_4_batch_effects(
     ax_right.scatter(
         X_cross_pca[n_g:, 0],
         X_cross_pca[n_g:, 1],
-        c=palette["Coustan-Smith"],
-        marker=markers["Coustan-Smith"],
-        label=f"Coustan-Smith (GPL96, n = {n_cs})",
+        c=sec_color,
+        marker=sec_marker,
+        label=f"{sec_name} (GPL96, n = {n_sec})",
         alpha=0.8,
         s=32,
         edgecolor="black",
