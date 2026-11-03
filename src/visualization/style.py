@@ -8,9 +8,12 @@ Provides configurable style presets:
 
 from __future__ import annotations
 
-from typing import Any, Dict, Tuple
+from pathlib import Path
+from typing import Any, Dict, Optional, Tuple, Union
 import matplotlib.pyplot as plt
 import seaborn as sns
+
+from src.config import FIGURES_DIR
 
 STYLE_PRESETS: Dict[str, Dict[str, Any]] = {
     "grayscale": {
@@ -196,4 +199,44 @@ def apply_style(preset: str = "grayscale") -> Dict[str, Any]:
     )
     
     return cfg
+
+
+def save_figure(
+    fig: plt.Figure,
+    name: str,
+    out_dir: Union[Path, str] = FIGURES_DIR,
+    dpi: int = 300,
+    save_pdf: bool = True,
+    close: bool = True,
+) -> Tuple[Path, Optional[Path]]:
+    """
+    Exports a matplotlib figure to 300+ DPI PNG and vector PDF.
+
+    Parameters:
+        fig: matplotlib Figure object or figure-like object with savefig method.
+        name: Base file name without extension.
+        out_dir: Directory where figures should be saved.
+        dpi: Resolution for raster export (default: 300).
+        save_pdf: Whether to export a scalable vector PDF alongside PNG.
+        close: Whether to close the figure after saving.
+
+    Returns:
+        Tuple of (png_path, pdf_path).
+    """
+    target_dir = Path(out_dir)
+    target_dir.mkdir(parents=True, exist_ok=True)
+    png_path = target_dir / f"{name}.png"
+    pdf_path = target_dir / f"{name}.pdf" if save_pdf else None
+
+    # Handle both plt.Figure and seaborn ClusterGrid
+    fig_obj = getattr(fig, "fig", fig)
+
+    fig_obj.savefig(png_path, dpi=dpi, bbox_inches="tight")
+    if pdf_path:
+        fig_obj.savefig(pdf_path, bbox_inches="tight")
+    if close:
+        plt.close(fig_obj)
+
+    return png_path, pdf_path
+
 
