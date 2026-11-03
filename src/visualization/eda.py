@@ -56,23 +56,23 @@ def plot_figure_1_distributions(
 ) -> Path:
     """
     Renders Figure 1: Density distributions comparing raw microarray fluorescence
-    intensity against log2(x + 1) transformed values for Golub and Armstrong cohorts.
+    intensity against log2(x + 1) transformed values for Golub and Coustan-Smith cohorts.
     """
     print("[*] Generating Figure 1: Expression Distributions...")
 
     golub_df = load_dataset("golub", level="probes", split="full")
-    armstrong_df = load_dataset("armstrong", level="probes", split="full")
+    coustan_smith_df = load_dataset("coustan_smith", level="probes", split="full")
 
     X_golub_raw, _ = get_feature_and_label_matrices(golub_df)
-    X_arm_raw, _ = get_feature_and_label_matrices(armstrong_df)
+    X_cs_raw, _ = get_feature_and_label_matrices(coustan_smith_df)
 
     # Sample representative values (subset of 50,000 measurements for smooth KDE calculation)
     np.random.seed(42)
     sample_g_raw = np.random.choice(X_golub_raw.values.ravel(), size=50000, replace=False)
     sample_g_log = np.log2(sample_g_raw + 1.0)
 
-    sample_a_raw = np.random.choice(X_arm_raw.values.ravel(), size=50000, replace=False)
-    sample_a_log = np.log2(sample_a_raw + 1.0)
+    sample_cs_raw = np.random.choice(X_cs_raw.values.ravel(), size=50000, replace=False)
+    sample_cs_log = np.log2(sample_cs_raw + 1.0)
 
     fig, axes = plt.subplots(2, 2, figsize=(7.2, 5.0), sharey="row")
 
@@ -101,22 +101,22 @@ def plot_figure_1_distributions(
         bbox=dict(boxstyle="round,pad=0.3", fc="white", ec="gray", alpha=0.8),
     )
 
-    # Armstrong Raw
+    # Coustan-Smith Raw
     sns.histplot(
-        sample_a_raw,
+        sample_cs_raw,
         bins=50,
         kde=True,
         ax=axes[0, 1],
-        color=palette["Armstrong"],
-        edgecolor=palette["Armstrong"],
+        color=palette["Coustan-Smith"],
+        edgecolor=palette["Coustan-Smith"],
         stat="density",
         alpha=0.3,
     )
-    axes[0, 1].set_title("(b) Armstrong (HG-U133A) - Raw Intensity", fontweight="bold")
+    axes[0, 1].set_title("(b) Coustan-Smith (HG-U133A) - Raw Intensity", fontweight="bold")
     axes[0, 1].set_xlabel("Raw Fluorescence Intensity")
     axes[0, 1].set_xlim(0, 16500)
     axes[0, 1].annotate(
-        f"Skewness: {stats.skew(sample_a_raw):.2f}\nMedian: {np.median(sample_a_raw):.1f}",
+        f"Skewness: {stats.skew(sample_cs_raw):.2f}\nMedian: {np.median(sample_cs_raw):.1f}",
         xy=(0.58, 0.65),
         xycoords="axes fraction",
         fontsize=8,
@@ -146,22 +146,22 @@ def plot_figure_1_distributions(
         bbox=dict(boxstyle="round,pad=0.3", fc="white", ec="gray", alpha=0.8),
     )
 
-    # Armstrong Log2
+    # Coustan-Smith Log2
     sns.histplot(
-        sample_a_log,
+        sample_cs_log,
         bins=50,
         kde=True,
         ax=axes[1, 1],
-        color=palette["Armstrong"],
-        edgecolor=palette["Armstrong"],
+        color=palette["Coustan-Smith"],
+        edgecolor=palette["Coustan-Smith"],
         stat="density",
         alpha=0.3,
     )
-    axes[1, 1].set_title(r"(d) Armstrong - $\log_2(x + 1)$ Transform", fontweight="bold")
+    axes[1, 1].set_title(r"(d) Coustan-Smith - $\log_2(x + 1)$ Transform", fontweight="bold")
     axes[1, 1].set_xlabel(r"$\log_2(\text{Intensity} + 1)$")
     axes[1, 1].set_xlim(4, 15)
     axes[1, 1].annotate(
-        f"Skewness: {stats.skew(sample_a_log):.2f}\nStd: {np.std(sample_a_log):.2f}",
+        f"Skewness: {stats.skew(sample_cs_log):.2f}\nStd: {np.std(sample_cs_log):.2f}",
         xy=(0.58, 0.65),
         xycoords="axes fraction",
         fontsize=8,
@@ -455,7 +455,7 @@ def plot_figure_4_batch_effects(
     Renders Figure 4:
     Left Panel: Golub train (n=38) vs. independent test (n=34) in joint PCA space
                 demonstrating variance expansion / covariate shift.
-    Right Panel: Shared 5,426 HUGO gene space between Golub (Hu6800) and Armstrong (HG-U133A)
+    Right Panel: Shared 5,426 HUGO gene space between Golub (Hu6800) and Coustan-Smith (HG-U133A)
                  diagnosing raw platform divergence and alignment after within-cohort z-scoring.
     """
     print("[*] Generating Figure 4: Batch Effect Diagnostics...")
@@ -512,23 +512,23 @@ def plot_figure_4_batch_effects(
     ax_left.set_ylabel(f"PC2 ({pca_split.explained_variance_ratio_[1]*100:.1f}%)")
     ax_left.legend(loc="upper right", fontsize=7.5)
 
-    # --- Right: Cross-Platform Batch Effect (Golub vs. Armstrong on 5,426 shared genes) ---
+    # --- Right: Cross-Platform Batch Effect (Golub vs. Coustan-Smith on 5,426 shared genes) ---
     df_harm_g = load_dataset("golub", level="harmonized")
-    df_harm_a = load_dataset("armstrong", level="harmonized")
+    df_harm_cs = load_dataset("coustan_smith", level="harmonized")
 
     X_g_raw, _ = get_feature_and_label_matrices(df_harm_g)
-    X_a_raw, _ = get_feature_and_label_matrices(df_harm_a)
+    X_cs_raw, _ = get_feature_and_label_matrices(df_harm_cs)
 
     # Standardize within cohort to demonstrate alignment vs platform separation
     X_g_s = StandardScaler().fit_transform(np.log2(X_g_raw + 1.0))
-    X_a_s = StandardScaler().fit_transform(np.log2(X_a_raw + 1.0))
+    X_cs_s = StandardScaler().fit_transform(np.log2(X_cs_raw + 1.0))
 
-    X_combined = np.vstack([X_g_s, X_a_s])
+    X_combined = np.vstack([X_g_s, X_cs_s])
     pca_cross = PCA(n_components=2, random_state=42)
     X_cross_pca = pca_cross.fit_transform(X_combined)
 
     n_g = len(df_harm_g)
-    n_a = len(df_harm_a)
+    n_cs = len(df_harm_cs)
 
     ax_right = axes[1]
     ax_right.scatter(
@@ -545,9 +545,9 @@ def plot_figure_4_batch_effects(
     ax_right.scatter(
         X_cross_pca[n_g:, 0],
         X_cross_pca[n_g:, 1],
-        c=palette["Armstrong"],
-        marker=markers["Armstrong"],
-        label=f"Armstrong (GPL96, n = {n_a})",
+        c=palette["Coustan-Smith"],
+        marker=markers["Coustan-Smith"],
+        label=f"Coustan-Smith (GPL96, n = {n_cs})",
         alpha=0.8,
         s=32,
         edgecolor="black",

@@ -27,6 +27,7 @@ STYLE_PRESETS: Dict[str, Dict[str, Any]] = {
             "test": "#888888",
             "Golub": "#222222",
             "Armstrong": "#888888",
+            "Coustan-Smith": "#888888",
         },
         "markers": {
             0: "o",             # Circle for ALL
@@ -37,6 +38,7 @@ STYLE_PRESETS: Dict[str, Dict[str, Any]] = {
             "test": "^",
             "Golub": "o",
             "Armstrong": "D",
+            "Coustan-Smith": "D",
         },
         "linestyles": {
             0: "-",
@@ -47,6 +49,7 @@ STYLE_PRESETS: Dict[str, Dict[str, Any]] = {
             "test": "--",
             "Golub": "-",
             "Armstrong": "--",
+            "Coustan-Smith": "--",
         },
         "cmap": "Greys",
         "heatmap_cmap": "mako",  # High perceptual uniformity even when printed in B&W
@@ -65,6 +68,7 @@ STYLE_PRESETS: Dict[str, Dict[str, Any]] = {
             "test": "#ff7f0e",
             "Golub": "#1f77b4",
             "Armstrong": "#2ca02c",
+            "Coustan-Smith": "#2ca02c",
         },
         "markers": {
             0: "o",
@@ -75,6 +79,7 @@ STYLE_PRESETS: Dict[str, Dict[str, Any]] = {
             "test": "^",
             "Golub": "o",
             "Armstrong": "s",
+            "Coustan-Smith": "s",
         },
         "linestyles": {
             0: "-",
@@ -85,6 +90,7 @@ STYLE_PRESETS: Dict[str, Dict[str, Any]] = {
             "test": "--",
             "Golub": "-",
             "Armstrong": "--",
+            "Coustan-Smith": "--",
         },
         "cmap": "Blues",
         "heatmap_cmap": "vlag",
@@ -95,7 +101,7 @@ STYLE_PRESETS: Dict[str, Dict[str, Any]] = {
         "font_family": "sans-serif",
         "font_size": 9,
         "palette": {
-            0: "#0077b6",       # ALL: Oceanic Cyan/Blue
+            0: "#0077b6",       # ALL: Vibrant Blue
             1: "#e63946",       # AML: Vibrant Coral/Crimson
             "ALL": "#0077b6",
             "AML": "#e63946",
@@ -103,6 +109,7 @@ STYLE_PRESETS: Dict[str, Dict[str, Any]] = {
             "test": "#f77f00",
             "Golub": "#0077b6",
             "Armstrong": "#52b788",
+            "Coustan-Smith": "#52b788",
         },
         "markers": {
             0: "o",
@@ -113,6 +120,7 @@ STYLE_PRESETS: Dict[str, Dict[str, Any]] = {
             "test": "^",
             "Golub": "o",
             "Armstrong": "^",
+            "Coustan-Smith": "^",
         },
         "linestyles": {
             0: "-",
@@ -123,6 +131,7 @@ STYLE_PRESETS: Dict[str, Dict[str, Any]] = {
             "test": "--",
             "Golub": "-",
             "Armstrong": "--",
+            "Coustan-Smith": "--",
         },
         "cmap": "viridis",
         "heatmap_cmap": "coolwarm",

@@ -1,6 +1,6 @@
 # Canonical Leukemia Subtype Biomarker Cross-Platform Mapping
 
-| Gene Symbol | Full Name | Diagnostic Role | Subtype | Golub (Hu6800 / GPL80) Probes | Armstrong (HG-U133A / GPL96) Probes | Cross-Platform Match |
+| Gene Symbol | Full Name | Diagnostic Role | Subtype | Golub (Hu6800 / GPL80) Probes | Coustan-Smith (HG-U133A / GPL96) Probes | Cross-Platform Match |
 | --- | --- | --- | --- | --- | --- | --- |
 | CST3 | Cystatin C | Classic AML-selective marker (Golub et al. 1999 top predictor) | AML | M27891_at | 201360_at | Yes |
 | CD33 | Myeloid cell surface antigen CD33 | Myeloid differentiation antigen, AML therapeutic target (Gemtuzumab) | AML | M23197_at | 206120_at | Yes |
