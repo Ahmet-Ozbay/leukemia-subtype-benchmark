@@ -11,6 +11,7 @@ from pathlib import Path
 from typing import Dict, Optional, Tuple, Union
 
 import matplotlib.pyplot as plt
+import matplotlib.ticker as ticker
 import numpy as np
 import pandas as pd
 import scipy.stats as stats
@@ -72,7 +73,7 @@ def plot_expression_distributions(
     sample_gse_rma = rng.choice(full_gse_rma, size=n_sample_gse, replace=False)
     sample_gse_std = (sample_gse_rma - np.mean(full_gse_rma)) / std_gse
 
-    fig, axes = plt.subplots(2, 2, figsize=(7.2, 5.0), sharey="row")
+    fig, axes = plt.subplots(2, 2, figsize=(7.2, 5.0))
 
     palette = style_cfg["palette"]
     golub_color = palette.get("Golub", "#222222")
@@ -91,8 +92,9 @@ def plot_expression_distributions(
     )
     axes[0, 0].set_title("(a) Golub (Hu6800) - Raw Intensity", fontweight="bold")
     axes[0, 0].set_xlabel("Raw Fluorescence Intensity")
-    axes[0, 0].set_ylabel("Density")
+    axes[0, 0].set_ylabel(r"Density ($\times 10^{-3}$)")
     axes[0, 0].set_xlim(0, 16500)
+    axes[0, 0].yaxis.set_major_formatter(ticker.FuncFormatter(lambda y, _: f"{y * 1e3:.1f}"))
     axes[0, 0].annotate(
         f"Skewness: {skew_g:.2f}\nMedian: {median_g:.1f}",
         xy=(0.58, 0.65),
@@ -114,6 +116,7 @@ def plot_expression_distributions(
     )
     axes[0, 1].set_title(r"(b) Agarwal / GSE51082 - RMA $\log_2$ Intensity", fontweight="bold")
     axes[0, 1].set_xlabel(r"RMA $\log_2$ Normalized Intensity")
+    axes[0, 1].set_ylabel("Density")
     axes[0, 1].set_xlim(3, 15)
     axes[0, 1].annotate(
         f"Skewness: {skew_gse:.2f}\nMedian: {median_gse:.1f}",
@@ -159,6 +162,7 @@ def plot_expression_distributions(
     )
     axes[1, 1].set_title(r"(d) Agarwal / GSE51082 - Standardized (Z-Score)", fontweight="bold")
     axes[1, 1].set_xlabel("Standardized Z-Score")
+    axes[1, 1].set_ylabel("Density")
     axes[1, 1].set_xlim(-4, 4)
     axes[1, 1].annotate(
         f"Skewness: {skew_gse:.2f}\nStd: {1.00:.2f}",
