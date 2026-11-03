@@ -9,7 +9,7 @@ Verified publication metadata, volumes, issue numbers, page ranges, and DOIs for
 ```text
 [1] T. R. Golub et al., “Molecular classification of cancer: Class discovery and class prediction by gene expression monitoring,” Science, vol. 286, no. 5439, pp. 531–537, Oct. 1999. https://doi.org/10.1126/science.286.5439.531
 
-[2] S. A. Armstrong et al., “MLL translocations specify a distinct gene expression profile that distinguishes a unique leukemia,” Nature Genetics, vol. 30, no. 1, pp. 41–47, Jan. 2002. https://doi.org/10.1038/ng765
+[2] E. Coustan-Smith et al., “New markers for minimal residual disease detection in acute lymphoblastic leukemia,” Blood, vol. 117, no. 23, pp. 6267–6276, Jun. 2011. https://doi.org/10.1182/blood-2010-12-324004
 
 [3] M. Molla, M. Waddell, D. Page, and J. Shavlik, “Using machine learning to design and interpret gene-expression microarrays,” AI Magazine, vol. 25, no. 1, pp. 23–44, 2004. https://doi.org/10.1609/aimag.v25i1.1745
 

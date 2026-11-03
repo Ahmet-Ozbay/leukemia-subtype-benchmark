@@ -35,9 +35,9 @@ python -c "import sklearn, shap, umap, optuna, GEOparse; print('Environment succ
 Run the complete end-to-end data acquisition, preprocessing, harmonization, and EDA visualization pipeline:
 
 ```bash
-# 1. Download raw cohorts (Golub via Kaggle Hub, Armstrong via NCBI GEO)
+# 1. Download raw cohorts (Golub via Kaggle Hub, Coustan-Smith via NCBI GEO)
 python -m src.data.download_data --dataset golub
-python -m src.data.download_data --dataset armstrong
+python -m src.data.download_data --dataset coustan_smith
 
 # 2. Ingest, transpose, clip [20, 16000], and impute expression matrices
 python -m src.data.make_dataset
@@ -61,7 +61,7 @@ leukemia-subtype-benchmark/
 ├── data/
 │   ├── external/               # Platform annotation files (e.g. GPL80)
 │   ├── processed/              # Parquet matrices by level (probes, genes, harmonized)
-│   └── raw/                    # Downloaded raw archives (golub, armstrong_2002)
+│   └── raw/                    # Downloaded raw archives (golub, coustan_smith_2011)
 ├── docs/
 │   ├── appendix_b_technical_notes.md  # Mathematical formulations & CV architecture
 │   ├── genai_log.md                   # Appendix A: GenAI traceability & audit log
@@ -88,7 +88,7 @@ leukemia-subtype-benchmark/
 
 The benchmark evaluates models on leukemia microarray cohorts framed strictly as a binary subtype classification problem (**ALL vs. AML**):
 - **Golub et al. (1999):** Primary benchmark ($n=72$, $p=7{,}129$). Staged via Kaggle Hub.
-- **Armstrong et al. (2002) / GSE28497:** External validation cohort from NCBI GEO.
+- **Coustan-Smith et al. (2011) / GSE28497:** External validation cohort from NCBI GEO.
 - **MILE Study / GSE13159:** Large-scale cross-study cohort from NCBI GEO.
 
 ### 1. Automated Data Acquisition
@@ -96,12 +96,12 @@ The benchmark evaluates models on leukemia microarray cohorts framed strictly as
 Datasets can be acquired programmatically using the download pipeline without manually downloading or placing files:
 
 ```bash
-# Download all cohorts (Golub, Armstrong, MILE)
+# Download all cohorts (Golub, Coustan-Smith, MILE)
 python -m src.data.download_data
 
 # Or download a specific dataset:
 python -m src.data.download_data --dataset golub
-python -m src.data.download_data --dataset armstrong
+python -m src.data.download_data --dataset coustan_smith
 python -m src.data.download_data --dataset mile
 ```
 
@@ -112,11 +112,11 @@ python -m src.data.download_data --dataset mile
 > python scripts/setup_kaggle_auth.py
 > ```
 > Alternatively, set `KAGGLE_API_TOKEN` in a `.env` file at the project root or in your shell environment. If not detected when running the download script, you will be prompted to configure it.
-> GEO datasets (*Armstrong* and *MILE*) are retrieved publicly via NCBI GEO without authentication.
+> GEO datasets (*Coustan-Smith* and *MILE*) are retrieved publicly via NCBI GEO without authentication.
 
 Downloaded raw archives and tables are automatically organized into dedicated directories under `data/raw/`:
 - `data/raw/golub/`
-- `data/raw/armstrong_2002/`
+- `data/raw/coustan_smith_2011/`
 - `data/raw/mile_study/`
 
 ### 2. Preprocessing Protocol
@@ -137,14 +137,14 @@ python -m src.data.make_dataset
 
 # Or process a specific cohort:
 python -m src.data.make_dataset --dataset golub
-python -m src.data.make_dataset --dataset armstrong
+python -m src.data.make_dataset --dataset coustan_smith
 ```
 
 ### 3. Probe-to-Gene Mapping & Cross-Platform Harmonization
 
 Because different microarray platforms use distinct probe identifier systems, cross-cohort validation requires mapping probes to standardized **HUGO gene symbols** and harmonizing overlapping feature spaces:
 - **Golub et al. (1999):** Affymetrix HuGeneFL / Hu6800 (GEO GPL80) $\to$ 7,129 probes mapped to 5,545 unique HUGO symbols.
-- **Armstrong et al. (2002) / GSE28497:** Affymetrix Human Genome U133A (GEO GPL96) $\to$ 22,283 probes mapped to 13,237 unique HUGO symbols.
+- **Coustan-Smith et al. (2011) / GSE28497:** Affymetrix Human Genome U133A (GEO GPL96) $\to$ 22,283 probes mapped to 13,237 unique HUGO symbols.
 - **Biomarker Validation:** 100% verified cross-platform match for key leukemia biomarkers (*CST3*, *CD33*, *CD19*, *MPO*, *FAH*, *MME/CD10*, *LYZ*).
 - **Cross-Platform Intersection:** **5,426 shared HUGO genes** (97.9% coverage of Golub's mapped genes).
 
@@ -200,21 +200,21 @@ data/processed/
 │   ├── golub_train_38.parquet
 │   ├── golub_test_34.parquet
 │   ├── golub_full_72.parquet
-│   └── armstrong_full.parquet
+│   └── coustan_smith_full.parquet
 │
 ├── genes/                # Level 2: Collapsed HUGO gene-level matrices
 │   ├── golub_train_genes.parquet
 │   ├── golub_test_genes.parquet
 │   ├── golub_full_genes.parquet
-│   └── armstrong_full_genes.parquet
+│   └── coustan_smith_full_genes.parquet
 │
 ├── harmonized/           # Level 3: Cross-platform harmonized matrices (5426 shared genes)
 │   ├── golub_harmonized_genes.parquet
-│   └── armstrong_harmonized_genes.parquet
+│   └── coustan_smith_harmonized_genes.parquet
 │
 └── annotations/          # Platform probe-to-gene lookup tables (.parquet & .csv)
     ├── golub_probe_to_gene.parquet
-    └── armstrong_probe_to_gene.parquet
+    └── coustan_smith_probe_to_gene.parquet
 ```
 
 #### Unified `load_dataset` Helper
@@ -230,11 +230,11 @@ df_full_probes  = load_dataset("golub", level="probes", split="full")   # (72, 7
 
 # Level 2: Collapsed gene space
 df_train_genes  = load_dataset("golub", level="genes", split="train")   # (38, 5547)
-df_arm_genes    = load_dataset("armstrong", level="genes")              # (103, 13239)
+df_cs_genes    = load_dataset("coustan_smith", level="genes")              # (103, 13239)
 
 # Level 3: Cross-platform harmonized space (identical columns)
 df_harm_golub     = load_dataset("golub", level="harmonized")           # (72, 5428)
-df_harm_armstrong = load_dataset("armstrong", level="harmonized")       # (103, 5428)
+df_harm_coustan = load_dataset("coustan_smith", level="harmonized")       # (103, 5428)
 ```
 
 ### 5. Verification & Automated Testing
@@ -278,7 +278,7 @@ python -m src.visualization.eda --style grayscale
 python -m src.visualization.eda --style academic
 python -m src.visualization.eda --style vibrant
 
-# Target a specific cohort (golub or armstrong)
+# Target a specific cohort (golub or coustan_smith)
 python -m src.visualization.eda --dataset golub --style academic
 ```
 
@@ -289,7 +289,7 @@ python -m src.visualization.eda --dataset golub --style academic
 | **Figure 1**<br>`fig1_expression_distributions` | `plot_expression_distributions()` | 4-panel KDE distributions pre- and post-$\log_2(x+1)$ transformation on clipped fluorescence. | Raw Affymetrix arrays exhibit severe right-skewness ($6.03$ Golub, $6.06$ Armstrong). $\log_2(x+1)$ transformation stabilizes skewness to $0.57$ and $0.25$, yielding symmetric Gaussian-like profiles and stabilizing inter-gene variance. |
 | **Figure 2**<br>`fig2_dimensionality_reduction` | `plot_dimensionality_reduction()` | Scree plot (top 15 PCs), 2D PCA, 2D t-SNE ($\text{perplexity}=15$), 2D UMAP ($\text{metric}=\text{'cosine'}$). | Top 2 linear PCs capture only $20.5\%$ variance (PC1: $11.9\%$, PC2: $8.6\%$) with partial ALL/AML overlap due to high-dimensional background noise. Non-linear manifolds (t-SNE and UMAP) achieve clean unsupervised cluster separation without label supervision. |
 | **Figure 3**<br>`fig3_top_genes_heatmap` | `plot_top_genes_heatmap()` | Two-sample Welch's $t$-test + Mann-Whitney $U$ test, Benjamini-Hochberg FDR ($\alpha=0.05$). Two-way hierarchical clustering (Euclidean, Ward linkage) on top 40 genes. | Clustermap dendrogram partitions all $n=72$ samples into distinct ALL and AML branches with high purity. Data-driven selection blindly recovers canonical AML markers (*LYZ*, *CST3*, *MPO*, *FAH*, *CD33*) and ALL markers (*CD19*). |
-| **Figure 4**<br>`fig4_batch_effect_diagnostics` | `plot_batch_effect_diagnostics()` | Panel (a): Golub Train ($n=38$) vs Test ($n=34$) joint PCA.<br>Panel (b): Cross-platform Golub (Hu6800, $n=72$) vs Armstrong (HG-U133A, $n=103$) PCA on 5,426 shared genes. | Exposes sample shift and variance discrepancy between fixed 38/34 splits, proving single-split benchmark unreliability. Confirms within-cohort z-score standardization successfully centers multi-generation Affymetrix platforms into a shared space. |
+| **Figure 4**<br>`fig4_batch_effect_diagnostics` | `plot_batch_effect_diagnostics()` | Panel (a): Golub Train ($n=38$) vs Test ($n=34$) joint PCA.<br>Panel (b): Cross-platform Golub (Hu6800, $n=72$) vs Coustan-Smith (HG-U133A, $n=103$) PCA on 5,426 shared genes. | Exposes sample shift and variance discrepancy between fixed 38/34 splits, proving single-split benchmark unreliability. Confirms within-cohort z-score standardization successfully centers multi-generation Affymetrix platforms into a shared space. |
 
 ### 4. Programmatic Python API
 
@@ -311,10 +311,10 @@ apply_style("academic")
 
 # 2. Load data via accessor API
 df_golub = load_dataset("golub", level="probes", split="full")
-df_armstrong = load_dataset("armstrong", level="probes")
+df_coustan = load_dataset("coustan_smith", level="probes")
 
 # 3. Generate figures programmatically
-fig1 = plot_expression_distributions(df_golub, df_armstrong, style="academic")
+fig1 = plot_expression_distributions(df_golub, df_coustan, style="academic")
 fig2 = plot_dimensionality_reduction(df_golub, style="academic")
 fig3 = plot_top_genes_heatmap(df_golub, top_n=40, style="academic")
 
