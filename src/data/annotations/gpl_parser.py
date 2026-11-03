@@ -91,7 +91,7 @@ def parse_gpl96_annotations(
     drop_multi_mapped: bool = False,
 ) -> pd.DataFrame:
     """
-    Parses GPL96 (HG-U133A) annotation table from GSE28497 SOFT archive or external cache.
+    Parses GPL96 (HG-U133A) annotation table from external cache or NCBI GEO.
     """
     import GEOparse
 
@@ -99,11 +99,6 @@ def parse_gpl96_annotations(
     if cached_gpl.exists():
         table = GEOparse.parse_GPL(str(cached_gpl)).table
     else:
-        if soft_path is None:
-            candidates = list((RAW_DATA_DIR / "armstrong_2002").glob("GSE28497*.soft*"))
-            if candidates:
-                soft_path = candidates[0]
-
         if soft_path is not None and soft_path.exists():
             print(f"[*] Extracting GPL96 from {soft_path.name}...")
             gse = GEOparse.get_GEO(filepath=str(soft_path), silent=True)
@@ -183,27 +178,48 @@ def extract_golub_annotations(
     return df
 
 
+def extract_gse51082_annotations(
+    out_dir: Path = ANNOTATIONS_DIR,
+    drop_multi_mapped: bool = False,
+) -> pd.DataFrame:
+    """
+    Extracts GSE51082 (GPL96 / HG-U133A) probe mapping and persists to Parquet and CSV.
+    Validates that all feature probes in processed GSE51082 parquet are covered.
+    """
+    out_dir.mkdir(parents=True, exist_ok=True)
+    df = parse_gpl96_annotations(drop_multi_mapped=drop_multi_mapped)
+
+    # Validate against processed dataset if available
+    gse_path = PROBE_DATA_DIR / "gse51082_all_aml.parquet"
+    if not gse_path.exists():
+        gse_path = PROBE_DATA_DIR / "gse51082_full_eda.parquet"
+    if gse_path.exists():
+        gse_df = pd.read_parquet(gse_path)
+        meta_cols = {"label", "subtype", "tissue", "disease", "patient_id", "sample_id", "title"}
+        feature_probes = [c for c in gse_df.columns if c not in meta_cols]
+        annotated_probes = set(df["probe_id"])
+        missing = set(feature_probes) - annotated_probes
+        assert len(missing) == 0, f"GSE51082 features missing from GPL96 annotation: {len(missing)} probes"
+
+    parquet_path = out_dir / "gse51082_probe_to_gene.parquet"
+    csv_path = out_dir / "gse51082_probe_to_gene.csv"
+    df.to_parquet(parquet_path, index=False)
+    df.to_csv(csv_path, index=False)
+
+    print(f"    [+] Saved GSE51082 annotations: {parquet_path.name} ({len(df)} probes, {df['is_mapped'].sum()} mapped)")
+    return df
+
+
 def extract_coustan_smith_annotations(
     out_dir: Path = ANNOTATIONS_DIR,
     drop_multi_mapped: bool = False,
 ) -> pd.DataFrame:
     """
     Extracts Coustan-Smith (GPL96) probe mapping and persists to Parquet and CSV.
-    Validates that all feature probes in processed Coustan-Smith parquet are covered.
+    Deprecated: Kept for backward compatibility.
     """
     out_dir.mkdir(parents=True, exist_ok=True)
     df = parse_gpl96_annotations(drop_multi_mapped=drop_multi_mapped)
-
-    # Validate against processed dataset if available
-    coustan_smith_path = PROBE_DATA_DIR / "coustan_smith_full.parquet"
-    if not coustan_smith_path.exists():
-        coustan_smith_path = PROCESSED_DATA_DIR / "coustan_smith_full.parquet"
-    if coustan_smith_path.exists():
-        cs_df = pd.read_parquet(coustan_smith_path)
-        feature_probes = [c for c in cs_df.columns if c not in ["label", "subtype"]]
-        annotated_probes = set(df["probe_id"])
-        missing = set(feature_probes) - annotated_probes
-        assert len(missing) == 0, f"Coustan-Smith features missing from GPL96 annotation: {len(missing)} probes"
 
     parquet_path = out_dir / "coustan_smith_probe_to_gene.parquet"
     csv_path = out_dir / "coustan_smith_probe_to_gene.csv"
@@ -233,7 +249,9 @@ def load_annotation_mapping(
 
     if cohort == "golub":
         return extract_golub_annotations(out_dir=annotations_dir, drop_multi_mapped=drop_multi_mapped)
+    elif cohort == "gse51082":
+        return extract_gse51082_annotations(out_dir=annotations_dir, drop_multi_mapped=drop_multi_mapped)
     elif cohort == "coustan_smith":
         return extract_coustan_smith_annotations(out_dir=annotations_dir, drop_multi_mapped=drop_multi_mapped)
     else:
-        raise ValueError(f"Unknown cohort '{cohort}'. Supported: 'golub', 'coustan_smith'.")
+        raise ValueError(f"Unknown cohort '{cohort}'. Supported: 'golub', 'gse51082', 'coustan_smith'.")

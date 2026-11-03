@@ -22,7 +22,8 @@ HARMONIZED_DATA_DIR = PROCESSED_DATA_DIR / "harmonized"
 
 # Cohort-specific raw directories
 GOLUB_RAW_DIR = RAW_DATA_DIR / "golub"
-COUSTAN_SMITH_RAW_DIR = RAW_DATA_DIR / "coustan_smith"
+GSE51082_RAW_DIR = RAW_DATA_DIR / "gse51082"
+COUSTAN_SMITH_RAW_DIR = RAW_DATA_DIR / "coustan_smith"  # Deprecated
 ARMSTRONG_RAW_DIR = COUSTAN_SMITH_RAW_DIR  # Deprecated alias for backward compatibility
 MILE_RAW_DIR = RAW_DATA_DIR / "mile_study"
 
@@ -34,7 +35,7 @@ TABLES_DIR = OUTPUTS_DIR / "tables"
 for path in [
     RAW_DATA_DIR,
     GOLUB_RAW_DIR,
-    COUSTAN_SMITH_RAW_DIR,
+    GSE51082_RAW_DIR,
     MILE_RAW_DIR,
     PROCESSED_DATA_DIR,
     EXTERNAL_DATA_DIR,

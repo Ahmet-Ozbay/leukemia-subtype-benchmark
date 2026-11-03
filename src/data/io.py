@@ -44,8 +44,8 @@ def load_dataset(
     level = level.lower().strip()
     split = split.lower().strip()
 
-    if cohort not in ("golub", "coustan_smith", "mile"):
-        raise ValueError(f"Unknown cohort '{cohort}'. Supported: 'golub', 'coustan_smith', 'mile'.")
+    if cohort not in ("golub", "gse51082", "coustan_smith", "mile"):
+        raise ValueError(f"Unknown cohort '{cohort}'. Supported: 'golub', 'gse51082', 'coustan_smith', 'mile'.")
 
     if level not in ("probes", "genes", "harmonized"):
         raise ValueError(f"Unknown level '{level}'. Supported: 'probes', 'genes', 'harmonized'.")
@@ -61,6 +61,11 @@ def load_dataset(
                 filename = "golub_test_genes.parquet"
             else:
                 filename = "golub_full_genes.parquet"
+        elif cohort == "gse51082":
+            if split in ("eda", "full_eda", "all_classes"):
+                filename = "gse51082_full_eda_genes.parquet"
+            else:
+                filename = "gse51082_all_aml_genes.parquet"
         else:
             filename = f"{cohort}_full_genes.parquet"
         search_dirs = [GENE_DATA_DIR, PROCESSED_DATA_DIR]
@@ -72,6 +77,11 @@ def load_dataset(
                 filename = "golub_test_34.parquet"
             else:
                 filename = "golub_full_72.parquet"
+        elif cohort == "gse51082":
+            if split in ("eda", "full_eda", "all_classes"):
+                filename = "gse51082_full_eda.parquet"
+            else:
+                filename = "gse51082_all_aml.parquet"
         else:
             filename = f"{cohort}_full.parquet"
         search_dirs = [PROBE_DATA_DIR, PROCESSED_DATA_DIR]

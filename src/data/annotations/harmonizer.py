@@ -75,76 +75,85 @@ def df_to_markdown(df: pd.DataFrame) -> str:
 
 def get_shared_gene_symbols(
     golub_mapping: pd.DataFrame,
-    coustan_smith_mapping: pd.DataFrame,
+    secondary_mapping: pd.DataFrame,
 ) -> List[str]:
     """Calculates the intersection of valid HUGO gene symbols across both cohorts."""
     g_syms = set(golub_mapping[golub_mapping["is_mapped"]]["gene_symbol"].dropna()) - {""}
-    cs_syms = set(coustan_smith_mapping[coustan_smith_mapping["is_mapped"]]["gene_symbol"].dropna()) - {""}
-    shared = sorted(list(g_syms.intersection(cs_syms)))
+    s_syms = set(secondary_mapping[secondary_mapping["is_mapped"]]["gene_symbol"].dropna()) - {""}
+    shared = sorted(list(g_syms.intersection(s_syms)))
     return shared
 
 
 def generate_harmonization_report(
     golub_mapping: pd.DataFrame,
-    coustan_smith_mapping: pd.DataFrame,
+    secondary_mapping: Optional[pd.DataFrame] = None,
+    coustan_smith_mapping: Optional[pd.DataFrame] = None,
+    secondary_name: str = "Agarwal et al. (GSE51082)",
     out_dir: Path = TABLES_DIR,
 ) -> Dict[str, pd.DataFrame]:
     """
     Generates and persists side-by-side harmonization specification tables (Rubric A3 & F5)
     and canonical leukemia biomarker mapping tables.
     """
+    if secondary_mapping is None:
+        if coustan_smith_mapping is not None:
+            secondary_mapping = coustan_smith_mapping
+            secondary_name = "Coustan-Smith et al. (GSE28497)"
+        else:
+            raise ValueError("Either secondary_mapping (GSE51082) or coustan_smith_mapping must be provided.")
+
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    shared_genes = get_shared_gene_symbols(golub_mapping, coustan_smith_mapping)
+    shared_genes = get_shared_gene_symbols(golub_mapping, secondary_mapping)
     g_mapped = golub_mapping[golub_mapping["is_mapped"]]
-    cs_mapped = coustan_smith_mapping[coustan_smith_mapping["is_mapped"]]
+    sec_mapped = secondary_mapping[secondary_mapping["is_mapped"]]
 
     g_syms_count = g_mapped["gene_symbol"].nunique()
-    cs_syms_count = cs_mapped["gene_symbol"].nunique()
+    sec_syms_count = sec_mapped["gene_symbol"].nunique()
     g_cov = (len(shared_genes) / g_syms_count) * 100 if g_syms_count else 0.0
-    cs_cov = (len(shared_genes) / cs_syms_count) * 100 if cs_syms_count else 0.0
+    sec_cov = (len(shared_genes) / sec_syms_count) * 100 if sec_syms_count else 0.0
 
     # 1. Summary comparison table
     summary_data = [
         {
             "Metric": "Cohort / Publication",
             "Golub et al. (1999)": "Golub et al. (1999)",
-            "Coustan-Smith et al. (2011)": "Coustan-Smith et al. (GSE28497)",
+            secondary_name: secondary_name,
         },
         {
             "Metric": "GEO Platform ID",
             "Golub et al. (1999)": "GPL80",
-            "Coustan-Smith et al. (2011)": "GPL96",
+            secondary_name: "GPL96",
         },
         {
             "Metric": "Array Platform Name",
             "Golub et al. (1999)": "Affymetrix HuGeneFL (Hu6800)",
-            "Coustan-Smith et al. (2011)": "Affymetrix Human Genome U133A",
+            secondary_name: "Affymetrix Human Genome U133A",
         },
         {
             "Metric": "Total Probe Sets (p)",
             "Golub et al. (1999)": str(len(golub_mapping)),
-            "Coustan-Smith et al. (2011)": str(len(coustan_smith_mapping)),
+            secondary_name: str(len(secondary_mapping)),
         },
         {
             "Metric": "Mapped Probes to HUGO Symbols",
             "Golub et al. (1999)": f"{len(g_mapped)} ({len(g_mapped)/len(golub_mapping):.1%})",
-            "Coustan-Smith et al. (2011)": f"{len(cs_mapped)} ({len(cs_mapped)/len(coustan_smith_mapping):.1%})",
+            secondary_name: f"{len(sec_mapped)} ({len(sec_mapped)/len(secondary_mapping):.1%})",
         },
         {
             "Metric": "Control & Unmapped Probes",
             "Golub et al. (1999)": str(len(golub_mapping) - len(g_mapped)),
-            "Coustan-Smith et al. (2011)": str(len(coustan_smith_mapping) - len(cs_mapped)),
+            secondary_name: str(len(secondary_mapping) - len(sec_mapped)),
         },
         {
             "Metric": "Unique HUGO Gene Symbols",
             "Golub et al. (1999)": str(g_syms_count),
-            "Coustan-Smith et al. (2011)": str(cs_syms_count),
+            secondary_name: str(sec_syms_count),
         },
         {
             "Metric": "Cross-Platform Overlapping Genes",
             "Golub et al. (1999)": f"{len(shared_genes)} ({g_cov:.1f}% of Golub genes)",
-            "Coustan-Smith et al. (2011)": f"{len(shared_genes)} ({cs_cov:.1f}% of Coustan-Smith genes)",
+            secondary_name: f"{len(shared_genes)} ({sec_cov:.1f}% of {secondary_name} genes)",
         },
     ]
 
@@ -162,7 +171,7 @@ def generate_harmonization_report(
     for bm in KEY_BIOMARKERS:
         sym = bm["gene_symbol"]
         g_probes = golub_mapping[golub_mapping["gene_symbol"] == sym]["probe_id"].tolist()
-        cs_probes = coustan_smith_mapping[coustan_smith_mapping["gene_symbol"] == sym]["probe_id"].tolist()
+        sec_probes = secondary_mapping[secondary_mapping["gene_symbol"] == sym]["probe_id"].tolist()
 
         biomarker_rows.append(
             {
@@ -171,8 +180,8 @@ def generate_harmonization_report(
                 "Diagnostic Role": bm["clinical_role"],
                 "Subtype": bm["subtype_association"],
                 "Golub (Hu6800 / GPL80) Probes": ", ".join(g_probes) if g_probes else "N/A",
-                "Coustan-Smith (HG-U133A / GPL96) Probes": ", ".join(cs_probes) if cs_probes else "N/A",
-                "Cross-Platform Match": "Yes" if (g_probes and cs_probes) else "No",
+                f"{secondary_name} (GPL96) Probes": ", ".join(sec_probes) if sec_probes else "N/A",
+                "Cross-Platform Match": "Yes" if (g_probes and sec_probes) else "No",
             }
         )
 
@@ -193,9 +202,12 @@ def generate_harmonization_report(
 
 def harmonize_cohort_genes(
     golub_df: pd.DataFrame,
-    coustan_smith_df: pd.DataFrame,
-    golub_mapping: pd.DataFrame,
-    coustan_smith_mapping: pd.DataFrame,
+    secondary_df: Optional[pd.DataFrame] = None,
+    golub_mapping: Optional[pd.DataFrame] = None,
+    secondary_mapping: Optional[pd.DataFrame] = None,
+    coustan_smith_df: Optional[pd.DataFrame] = None,
+    coustan_smith_mapping: Optional[pd.DataFrame] = None,
+    secondary_name: str = "gse51082",
     strategy: str = "max_variance",
     drop_multi_mapped: bool = False,
     out_dir: Path = HARMONIZED_DATA_DIR,
@@ -204,7 +216,20 @@ def harmonize_cohort_genes(
     Collapses both cohorts to gene symbols using zero-leakage aggregation and harmonizes
     feature space strictly to the common gene intersection.
     """
-    shared_genes = get_shared_gene_symbols(golub_mapping, coustan_smith_mapping)
+    if secondary_df is None:
+        if coustan_smith_df is not None:
+            secondary_df = coustan_smith_df
+            secondary_name = "coustan_smith"
+        else:
+            raise ValueError("Either secondary_df or coustan_smith_df must be provided.")
+
+    if secondary_mapping is None:
+        if coustan_smith_mapping is not None:
+            secondary_mapping = coustan_smith_mapping
+        else:
+            raise ValueError("Either secondary_mapping or coustan_smith_mapping must be provided.")
+
+    shared_genes = get_shared_gene_symbols(golub_mapping, secondary_mapping)
     print(f"[*] Harmonizing cohorts on {len(shared_genes)} shared HUGO gene symbols (Strategy: {strategy})...")
 
     # Collapse Golub
@@ -215,10 +240,10 @@ def harmonize_cohort_genes(
         drop_multi_mapped=drop_multi_mapped,
     )
 
-    # Collapse Coustan-Smith
-    coustan_smith_collapsed, _ = collapse_dataset(
-        train_df=coustan_smith_df,
-        mapping_df=coustan_smith_mapping,
+    # Collapse Secondary (GSE51082)
+    sec_collapsed, _ = collapse_dataset(
+        train_df=secondary_df,
+        mapping_df=secondary_mapping,
         strategy=strategy,
         drop_multi_mapped=drop_multi_mapped,
     )
@@ -227,22 +252,22 @@ def harmonize_cohort_genes(
 
     # Subset strictly to shared genes with identical column ordering
     golub_harmonized = pd.concat([golub_collapsed[shared_genes], golub_collapsed[meta_cols]], axis=1)
-    coustan_smith_harmonized = pd.concat([coustan_smith_collapsed[shared_genes], coustan_smith_collapsed[meta_cols]], axis=1)
+    sec_harmonized = pd.concat([sec_collapsed[shared_genes], sec_collapsed[meta_cols]], axis=1)
 
     # Invariant assertions
-    assert list(golub_harmonized.columns) == list(coustan_smith_harmonized.columns), "Harmonized feature columns do not match!"
+    assert list(golub_harmonized.columns) == list(sec_harmonized.columns), "Harmonized feature columns do not match!"
     assert not golub_harmonized.isna().any().any(), "Harmonized Golub matrix contains NaNs!"
-    assert not coustan_smith_harmonized.isna().any().any(), "Harmonized Coustan-Smith matrix contains NaNs!"
+    assert not sec_harmonized.isna().any().any(), f"Harmonized {secondary_name} matrix contains NaNs!"
 
     # Export
     out_dir.mkdir(parents=True, exist_ok=True)
     golub_out = out_dir / "golub_harmonized_genes.parquet"
-    coustan_smith_out = out_dir / "coustan_smith_harmonized_genes.parquet"
+    sec_out = out_dir / f"{secondary_name}_harmonized_genes.parquet"
 
     golub_harmonized.to_parquet(golub_out)
-    coustan_smith_harmonized.to_parquet(coustan_smith_out)
+    sec_harmonized.to_parquet(sec_out)
 
     print(f"    [+] Saved: {golub_out.name} (Shape: {golub_harmonized.shape})")
-    print(f"    [+] Saved: {coustan_smith_out.name} (Shape: {coustan_smith_harmonized.shape})")
+    print(f"    [+] Saved: {sec_out.name} (Shape: {sec_harmonized.shape})")
 
-    return golub_harmonized, coustan_smith_harmonized
+    return golub_harmonized, sec_harmonized

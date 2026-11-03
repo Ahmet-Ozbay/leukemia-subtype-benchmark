@@ -22,6 +22,7 @@ from src.data.processors import (
     BaseDatasetProcessor,
     CoustanSmithProcessor,
     GolubProcessor,
+    GSE51082Processor,
     MileProcessor,
     process_all_available,
     process_dataset,
@@ -30,6 +31,7 @@ from src.data.processors import (
 __all__ = [
     "BaseDatasetProcessor",
     "GolubProcessor",
+    "GSE51082Processor",
     "CoustanSmithProcessor",
     "MileProcessor",
     "DATASET_REGISTRY",

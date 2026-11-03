@@ -1,6 +1,6 @@
 # Cross-Platform Microarray Cohort Harmonization Summary
 
-| Metric | Golub et al. (1999) | Coustan-Smith et al. (2011) |
+| Metric | Golub et al. (1999) | Coustan-Smith et al. (GSE28497) |
 | --- | --- | --- |
 | Cohort / Publication | Golub et al. (1999) | Coustan-Smith et al. (GSE28497) |
 | GEO Platform ID | GPL80 | GPL96 |
@@ -9,4 +9,4 @@
 | Mapped Probes to HUGO Symbols | 6409 (89.9%) | 21215 (95.2%) |
 | Control & Unmapped Probes | 720 | 1068 |
 | Unique HUGO Gene Symbols | 5545 | 13237 |
-| Cross-Platform Overlapping Genes | 5426 (97.9% of Golub genes) | 5426 (41.0% of Coustan-Smith genes) |
+| Cross-Platform Overlapping Genes | 5426 (97.9% of Golub genes) | 5426 (41.0% of Coustan-Smith et al. (GSE28497) genes) |
