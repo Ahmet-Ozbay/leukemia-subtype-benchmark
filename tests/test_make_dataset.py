@@ -56,13 +56,13 @@ def golub_datasets() -> Dict[str, pd.DataFrame]:
 
 
 @pytest.fixture(scope="module")
-def armstrong_dataset() -> pd.DataFrame:
-    """Loads processed Armstrong Parquet file if present on disk."""
-    armstrong_path = _resolve_probe_path("armstrong_full.parquet")
-    if not armstrong_path.exists():
-        pytest.skip("Armstrong processed artifact missing. Run make_dataset first.")
+def coustan_smith_dataset() -> pd.DataFrame:
+    """Loads processed Coustan-Smith Parquet file if present on disk."""
+    cs_path = _resolve_probe_path("coustan_smith_full.parquet")
+    if not cs_path.exists():
+        pytest.skip("Coustan-Smith processed artifact missing. Run make_dataset first.")
 
-    return pd.read_parquet(armstrong_path)
+    return pd.read_parquet(cs_path)
 
 
 @pytest.fixture(scope="module")
@@ -185,7 +185,7 @@ def test_validate_processed_matrix_invariants():
 # ==============================================================================
 def test_dataset_registry_conformance():
     """Verifies that all expected processors are registered and inherit from BaseDatasetProcessor."""
-    expected_cohorts = {"golub", "armstrong", "mile"}
+    expected_cohorts = {"golub", "coustan_smith", "mile"}
     assert expected_cohorts.issubset(set(DATASET_REGISTRY.keys())), (
         f"Missing expected registered cohorts: {expected_cohorts - set(DATASET_REGISTRY.keys())}"
     )
@@ -334,23 +334,23 @@ def test_golub_no_metadata_leaked_in_features(golub_datasets):
 
 
 # ==============================================================================
-# 4. Armstrong et al. (GSE28497) Invariant Tests (Rubric A3 & F3)
+# 4. Coustan-Smith et al. (GSE28497) Invariant Tests (Rubric A3 & F3)
 # ==============================================================================
-def test_armstrong_contract_and_sanitization(armstrong_dataset):
-    """Verifies data hygiene and metadata alignment for the Armstrong cohort."""
-    df = armstrong_dataset
+def test_coustan_smith_contract_and_sanitization(coustan_smith_dataset):
+    """Verifies data hygiene and metadata alignment for the Coustan-Smith cohort."""
+    df = coustan_smith_dataset
 
     # Verify metadata columns
-    assert "label" in df.columns, "Armstrong dataset missing 'label' column."
-    assert "subtype" in df.columns, "Armstrong dataset missing 'subtype' column."
-    assert not df["label"].isna().any(), "Armstrong dataset contains unassigned labels."
+    assert "label" in df.columns, "Coustan-Smith dataset missing 'label' column."
+    assert "subtype" in df.columns, "Coustan-Smith dataset missing 'subtype' column."
+    assert not df["label"].isna().any(), "Coustan-Smith dataset contains unassigned labels."
 
     # Verify binary target classes
     unique_labels = set(df["label"].unique())
     assert unique_labels.issubset({0, 1}), f"Non-binary labels detected: {unique_labels}"
     assert np.issubdtype(df["label"].dtype, np.integer), "'label' must be integer type."
 
-    # Verify clinical sample count (GSE28497 contains 48-72 pediatric samples)
+    # Verify clinical sample count (GSE28497 contains pediatric ALL samples)
     assert len(df) >= 40, f"Unexpectedly small sample size: {len(df)} samples."
 
     # Verify high-dimensional microarray feature space
@@ -359,15 +359,15 @@ def test_armstrong_contract_and_sanitization(armstrong_dataset):
 
     # Verify expression value bounds and hygiene
     X = df[feature_cols].values
-    assert not np.isnan(X).any(), "Armstrong expression matrix contains NaNs."
-    assert not np.isinf(X).any(), "Armstrong expression matrix contains Infs."
-    assert X.min() >= EXPRESSION_CLIP_MIN, f"Armstrong intensities below lower bound {EXPRESSION_CLIP_MIN}."
-    assert X.max() <= EXPRESSION_CLIP_MAX, f"Armstrong intensities above upper bound {EXPRESSION_CLIP_MAX}."
+    assert not np.isnan(X).any(), "Coustan-Smith expression matrix contains NaNs."
+    assert not np.isinf(X).any(), "Coustan-Smith expression matrix contains Infs."
+    assert X.min() >= EXPRESSION_CLIP_MIN, f"Coustan-Smith intensities below lower bound {EXPRESSION_CLIP_MIN}."
+    assert X.max() <= EXPRESSION_CLIP_MAX, f"Coustan-Smith intensities above upper bound {EXPRESSION_CLIP_MAX}."
 
 
-def test_armstrong_unique_samples(armstrong_dataset):
+def test_coustan_smith_unique_samples(coustan_smith_dataset):
     """Ensures GSM sample accession identifiers are unique."""
-    assert armstrong_dataset.index.is_unique, "Duplicate sample IDs detected in Armstrong dataset."
+    assert coustan_smith_dataset.index.is_unique, "Duplicate sample IDs detected in Coustan-Smith dataset."
 
 
 # ==============================================================================
@@ -415,7 +415,7 @@ def test_modular_processors_package_exports():
     symbols = [
         "BaseDatasetProcessor",
         "GolubProcessor",
-        "ArmstrongProcessor",
+        "CoustanSmithProcessor",
         "MileProcessor",
         "DATASET_REGISTRY",
         "process_dataset",

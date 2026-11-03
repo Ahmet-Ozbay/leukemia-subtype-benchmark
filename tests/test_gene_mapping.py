@@ -28,7 +28,7 @@ from src.data.annotations import (
     KEY_BIOMARKERS,
     ProbeCollapser,
     collapse_dataset,
-    extract_armstrong_annotations,
+    extract_coustan_smith_annotations,
     extract_golub_annotations,
     generate_harmonization_report,
     get_shared_gene_symbols,
@@ -44,9 +44,9 @@ def golub_mapping() -> pd.DataFrame:
 
 
 @pytest.fixture(scope="module")
-def armstrong_mapping() -> pd.DataFrame:
-    """Fixture providing Armstrong GPL96 annotation table."""
-    return load_annotation_mapping("armstrong", annotations_dir=ANNOTATIONS_DIR)
+def coustan_smith_mapping() -> pd.DataFrame:
+    """Fixture providing Coustan-Smith GPL96 annotation table."""
+    return load_annotation_mapping("coustan_smith", annotations_dir=ANNOTATIONS_DIR)
 
 
 # ==============================================================================
@@ -92,35 +92,35 @@ def test_golub_annotation_coverage_and_schema(golub_mapping):
         assert len(diff) == 0, f"Unmapped feature probes found in Golub: {diff}"
 
 
-def test_armstrong_annotation_coverage_and_schema(armstrong_mapping):
+def test_coustan_smith_annotation_coverage_and_schema(coustan_smith_mapping):
     """
     Verifies that:
     - GPL96 table contains exactly 22,283 probe sets.
-    - 100% of feature probes in processed Armstrong parquet are present.
+    - 100% of feature probes in processed Coustan-Smith parquet are present.
     - Control probes are flagged as control and unmapped.
     """
-    assert len(armstrong_mapping) == 22283, f"Expected 22283 Armstrong probes, got {len(armstrong_mapping)}"
+    assert len(coustan_smith_mapping) == 22283, f"Expected 22283 Coustan-Smith probes, got {len(coustan_smith_mapping)}"
 
-    controls = armstrong_mapping[armstrong_mapping["probe_id"].str.startswith("AFFX-")]
+    controls = coustan_smith_mapping[coustan_smith_mapping["probe_id"].str.startswith("AFFX-")]
     assert len(controls) > 0
     assert controls["is_control"].all()
     assert not controls["is_mapped"].any()
 
-    arm_full_p = PROBE_DATA_DIR / "armstrong_full.parquet"
-    if not arm_full_p.exists():
-        arm_full_p = PROCESSED_DATA_DIR / "armstrong_full.parquet"
-    if arm_full_p.exists():
-        full_df = pd.read_parquet(arm_full_p)
+    cs_full_p = PROBE_DATA_DIR / "coustan_smith_full.parquet"
+    if not cs_full_p.exists():
+        cs_full_p = PROCESSED_DATA_DIR / "coustan_smith_full.parquet"
+    if cs_full_p.exists():
+        full_df = pd.read_parquet(cs_full_p)
         features = [c for c in full_df.columns if c not in ["label", "subtype"]]
         assert len(features) == 22283
-        diff = set(features) - set(armstrong_mapping["probe_id"])
-        assert len(diff) == 0, f"Unmapped feature probes found in Armstrong: {diff}"
+        diff = set(features) - set(coustan_smith_mapping["probe_id"])
+        assert len(diff) == 0, f"Unmapped feature probes found in Coustan-Smith: {diff}"
 
 
 # ==============================================================================
 # 2. Canonical Leukemia Biomarker Cross-Platform Alignment
 # ==============================================================================
-def test_key_biomarkers_mapped_in_both_cohorts(golub_mapping, armstrong_mapping):
+def test_key_biomarkers_mapped_in_both_cohorts(golub_mapping, coustan_smith_mapping):
     """
     Validates that core clinical biomarkers (CST3, CD33, CD19, MPO, FAH, MME/CD10, LYZ)
     have valid probe mappings in both platforms.
@@ -128,10 +128,10 @@ def test_key_biomarkers_mapped_in_both_cohorts(golub_mapping, armstrong_mapping)
     for bm in KEY_BIOMARKERS:
         sym = bm["gene_symbol"]
         g_probes = golub_mapping[golub_mapping["gene_symbol"] == sym]["probe_id"].tolist()
-        a_probes = armstrong_mapping[armstrong_mapping["gene_symbol"] == sym]["probe_id"].tolist()
+        cs_probes = coustan_smith_mapping[coustan_smith_mapping["gene_symbol"] == sym]["probe_id"].tolist()
 
         assert len(g_probes) >= 1, f"Biomarker '{sym}' missing in Golub GPL80 mapping."
-        assert len(a_probes) >= 1, f"Biomarker '{sym}' missing in Armstrong GPL96 mapping."
+        assert len(cs_probes) >= 1, f"Biomarker '{sym}' missing in Coustan-Smith GPL96 mapping."
 
     # Verify specific known probe IDs from literature
     # Golub: CST3 is M27891_at, CD33 is M23197_at
@@ -142,12 +142,12 @@ def test_key_biomarkers_mapped_in_both_cohorts(golub_mapping, armstrong_mapping)
     assert "M23197_at" in cd33_golub
 
 
-def test_shared_gene_overlap(golub_mapping, armstrong_mapping):
+def test_shared_gene_overlap(golub_mapping, coustan_smith_mapping):
     """
-    Verifies that the shared HUGO gene intersection between Golub and Armstrong
+    Verifies that the shared HUGO gene intersection between Golub and Coustan-Smith
     exceeds 5,000 genes (actual ~5,426 with primary symbol selection).
     """
-    shared = get_shared_gene_symbols(golub_mapping, armstrong_mapping)
+    shared = get_shared_gene_symbols(golub_mapping, coustan_smith_mapping)
     assert len(shared) >= 5000, f"Expected >= 5000 shared genes, got {len(shared)}"
     assert all(isinstance(s, str) and len(s) > 0 for s in shared)
 
@@ -295,7 +295,7 @@ def test_collapse_dataset_preserves_metadata():
 # ==============================================================================
 # 4. End-to-End Harmonization Invariants
 # ==============================================================================
-def test_harmonize_cohort_genes_live(golub_mapping, armstrong_mapping):
+def test_harmonize_cohort_genes_live(golub_mapping, coustan_smith_mapping):
     """
     Tests end-to-end cohort harmonization on processed datasets if present on disk.
     Verifies that harmonized matrices have identical columns in identical order.
@@ -304,30 +304,30 @@ def test_harmonize_cohort_genes_live(golub_mapping, armstrong_mapping):
     if not g_path.exists():
         g_path = PROCESSED_DATA_DIR / "golub_full_72.parquet"
 
-    a_path = PROBE_DATA_DIR / "armstrong_full.parquet"
-    if not a_path.exists():
-        a_path = PROCESSED_DATA_DIR / "armstrong_full.parquet"
+    cs_path = PROBE_DATA_DIR / "coustan_smith_full.parquet"
+    if not cs_path.exists():
+        cs_path = PROCESSED_DATA_DIR / "coustan_smith_full.parquet"
 
-    if not (g_path.exists() and a_path.exists()):
-        pytest.skip("Processed Golub or Armstrong files not found on disk.")
+    if not (g_path.exists() and cs_path.exists()):
+        pytest.skip("Processed Golub or Coustan-Smith files not found on disk.")
 
     golub_df = pd.read_parquet(g_path)
-    arm_df = pd.read_parquet(a_path)
+    cs_df = pd.read_parquet(cs_path)
 
-    g_harm, a_harm = harmonize_cohort_genes(
+    g_harm, cs_harm = harmonize_cohort_genes(
         golub_df=golub_df,
-        armstrong_df=arm_df,
+        coustan_smith_df=cs_df,
         golub_mapping=golub_mapping,
-        armstrong_mapping=armstrong_mapping,
+        coustan_smith_mapping=coustan_smith_mapping,
         strategy="max_variance",
     )
 
     # Identical columns in exact identical order
-    assert list(g_harm.columns) == list(a_harm.columns)
+    assert list(g_harm.columns) == list(cs_harm.columns)
 
     # Sample counts preserved
     assert len(g_harm) == 72
-    assert len(a_harm) == 103
+    assert len(cs_harm) == 103
 
     # Feature counts
     feature_cols = [c for c in g_harm.columns if c not in ["label", "subtype"]]
@@ -336,19 +336,19 @@ def test_harmonize_cohort_genes_live(golub_mapping, armstrong_mapping):
     # No NaNs or Infs
     assert not g_harm[feature_cols].isna().any().any()
     assert not np.isinf(g_harm[feature_cols].to_numpy()).any()
-    assert not a_harm[feature_cols].isna().any().any()
-    assert not np.isinf(a_harm[feature_cols].to_numpy()).any()
+    assert not cs_harm[feature_cols].isna().any().any()
+    assert not np.isinf(cs_harm[feature_cols].to_numpy()).any()
 
     # Files must be written to HARMONIZED_DATA_DIR
     assert (HARMONIZED_DATA_DIR / "golub_harmonized_genes.parquet").exists()
-    assert (HARMONIZED_DATA_DIR / "armstrong_harmonized_genes.parquet").exists()
+    assert (HARMONIZED_DATA_DIR / "coustan_smith_harmonized_genes.parquet").exists()
 
 
-def test_generate_harmonization_report_creates_tables(golub_mapping, armstrong_mapping):
+def test_generate_harmonization_report_creates_tables(golub_mapping, coustan_smith_mapping):
     """Verifies that harmonization and biomarker summary tables are created."""
     tables = generate_harmonization_report(
         golub_mapping=golub_mapping,
-        armstrong_mapping=armstrong_mapping,
+        coustan_smith_mapping=coustan_smith_mapping,
         out_dir=TABLES_DIR,
     )
 
@@ -370,22 +370,22 @@ def test_load_dataset_api():
     assert g_probes.shape == (72, 7131)
     g_train = load_dataset("golub", level="probes", split="train")
     assert g_train.shape == (38, 7131)
-    a_probes = load_dataset("armstrong", level="probes")
-    assert a_probes.shape == (103, 22285)
+    cs_probes = load_dataset("coustan_smith", level="probes")
+    assert cs_probes.shape == (103, 22285)
 
     # Gene level
     g_genes = load_dataset("golub", level="genes", split="full")
     assert g_genes.shape[0] == 72
     assert "label" in g_genes.columns
-    a_genes = load_dataset("armstrong", level="genes")
-    assert a_genes.shape[0] == 103
+    cs_genes = load_dataset("coustan_smith", level="genes")
+    assert cs_genes.shape[0] == 103
 
     # Harmonized level
     g_harm = load_dataset("golub", level="harmonized")
-    a_harm = load_dataset("armstrong", level="harmonized")
-    assert list(g_harm.columns) == list(a_harm.columns)
+    cs_harm = load_dataset("coustan_smith", level="harmonized")
+    assert list(g_harm.columns) == list(cs_harm.columns)
     assert g_harm.shape == (72, 5428)
-    assert a_harm.shape == (103, 5428)
+    assert cs_harm.shape == (103, 5428)
 
     # Invalid arguments raise ValueError
     with pytest.raises(ValueError, match="Unknown cohort"):
