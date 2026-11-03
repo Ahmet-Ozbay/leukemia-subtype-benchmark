@@ -7,6 +7,7 @@ Generates IEEE-compliant, 300+ DPI figures referenced in MÖAT - Ara Rapor:
 - Figure 2: fig2_dimensionality_reduction.png (Scree plot, 2D PCA, t-SNE, UMAP)
 - Figure 3: fig3_top_genes_heatmap.png (Top 40 differentially expressed genes clustermap)
 - Figure 4: fig4_batch_effect_diagnostics.png (Golub train/test shift & cross-platform batch effect)
+- Figure 5: fig5_tissue_confounding_and_landscape.png (Tissue diagnostic & 6-class global landscape)
 """
 
 from __future__ import annotations
@@ -477,20 +478,20 @@ def plot_figure_4_batch_effects(
     out_dir: Path = FIGURES_DIR,
 ) -> Path:
     """
-    Renders Figure 4:
-    Left Panel: Golub train (n=38) vs. independent test (n=34) in joint PCA space
-                demonstrating variance expansion / covariate shift.
-    Right Panel: Shared 5,426 HUGO gene space between Golub (Hu6800) and Coustan-Smith (HG-U133A)
-                 diagnosing raw platform divergence and alignment after within-cohort z-scoring.
+    Renders Figure 4: Comprehensive 4-panel diagnostic figure:
+    (a) Golub train (n=38) vs. independent test (n=34) in joint PCA space (covariate shift).
+    (b) Shared 5,426 HUGO gene space between Golub (Hu6800) and GSE51082 (GPL96) cross-platform PCA.
+    (c) Tissue origin confounding diagnostics across cohorts (BM vs. PB with Fisher exact test).
+    (d) 6-Class global leukemia transcriptomic landscape on GSE51082 (n=139 across 22,283 probes).
     """
-    print("[*] Generating Figure 4: Batch Effect Diagnostics...")
+    print("[*] Generating Figure 4: Batch Effect, Tissue Confounding & Landscape Diagnostics...")
 
     palette = style_cfg["palette"]
     markers = style_cfg["markers"]
 
-    fig, axes = plt.subplots(1, 2, figsize=(7.2, 3.4))
+    fig, axes = plt.subplots(2, 2, figsize=(7.2, 5.6))
 
-    # --- Left: Golub Train vs. Test Covariate Shift ---
+    # --- Top-Left: Golub Train vs. Test Covariate Shift (a) ---
     df_train = load_dataset("golub", level="genes", split="train")
     df_test = load_dataset("golub", level="genes", split="test")
 
@@ -500,7 +501,6 @@ def plot_figure_4_batch_effects(
     X_train_log = np.log2(X_train_raw + 1.0)
     X_test_log = np.log2(X_test_raw + 1.0)
 
-    # Train scaler fitted strictly on train
     scaler_g = StandardScaler()
     X_train_s = scaler_g.fit_transform(X_train_log)
     X_test_s = scaler_g.transform(X_test_log)
@@ -509,35 +509,35 @@ def plot_figure_4_batch_effects(
     X_train_pca = pca_split.fit_transform(X_train_s)
     X_test_pca = pca_split.transform(X_test_s)
 
-    ax_left = axes[0]
-    ax_left.scatter(
+    ax_a = axes[0, 0]
+    ax_a.scatter(
         X_train_pca[:, 0],
         X_train_pca[:, 1],
         c=palette["train"],
         marker=markers["train"],
         label="Training Set (n = 38)",
         alpha=0.85,
-        s=36,
+        s=32,
         edgecolor="black",
         linewidth=0.5,
     )
-    ax_left.scatter(
+    ax_a.scatter(
         X_test_pca[:, 0],
         X_test_pca[:, 1],
         c=palette["test"],
         marker=markers["test"],
         label="Independent Test (n = 34)",
         alpha=0.85,
-        s=36,
+        s=32,
         edgecolor="black",
         linewidth=0.5,
     )
-    ax_left.set_title("(a) Golub Train vs. Independent Test Shift", fontweight="bold")
-    ax_left.set_xlabel(f"PC1 ({pca_split.explained_variance_ratio_[0]*100:.1f}%)")
-    ax_left.set_ylabel(f"PC2 ({pca_split.explained_variance_ratio_[1]*100:.1f}%)")
-    ax_left.legend(loc="upper right", fontsize=7.5)
+    ax_a.set_title("(a) Golub Train vs. Independent Test Shift", fontweight="bold", fontsize=8)
+    ax_a.set_xlabel(f"PC1 ({pca_split.explained_variance_ratio_[0]*100:.1f}%)", fontsize=7.5)
+    ax_a.set_ylabel(f"PC2 ({pca_split.explained_variance_ratio_[1]*100:.1f}%)", fontsize=7.5)
+    ax_a.legend(loc="upper right", fontsize=6.5)
 
-    # --- Right: Cross-Platform Batch Effect (Golub vs. Agarwal/GSE51082 on 5,426 shared genes) ---
+    # --- Top-Right: Cross-Platform Harmonization on 5,426 shared genes (b) ---
     df_harm_g = load_dataset("golub", level="harmonized")
     try:
         df_harm_sec = load_dataset("gse51082", level="harmonized")
@@ -553,7 +553,6 @@ def plot_figure_4_batch_effects(
     X_g_raw, _ = get_feature_and_label_matrices(df_harm_g)
     X_sec_raw, _ = get_feature_and_label_matrices(df_harm_sec)
 
-    # Standardize within cohort: Golub requires log2(x+1); GSE51082 is already RMA log2
     X_g_s = StandardScaler().fit_transform(np.log2(X_g_raw + 1.0))
     X_sec_s = StandardScaler().fit_transform(X_sec_raw)
 
@@ -564,33 +563,148 @@ def plot_figure_4_batch_effects(
     n_g = len(df_harm_g)
     n_sec = len(df_harm_sec)
 
-    ax_right = axes[1]
-    ax_right.scatter(
+    ax_b = axes[0, 1]
+    ax_b.scatter(
         X_cross_pca[:n_g, 0],
         X_cross_pca[:n_g, 1],
         c=palette["Golub"],
         marker=markers["Golub"],
         label=f"Golub (Hu6800, n = {n_g})",
         alpha=0.8,
-        s=32,
+        s=30,
         edgecolor="black",
         linewidth=0.5,
     )
-    ax_right.scatter(
+    ax_b.scatter(
         X_cross_pca[n_g:, 0],
         X_cross_pca[n_g:, 1],
         c=sec_color,
         marker=sec_marker,
         label=f"{sec_name} (GPL96, n = {n_sec})",
         alpha=0.8,
-        s=32,
+        s=30,
         edgecolor="black",
         linewidth=0.5,
     )
-    ax_right.set_title("(b) Cross-Platform Harmonization (5,426 Genes)", fontweight="bold")
-    ax_right.set_xlabel(f"PC1 ({pca_cross.explained_variance_ratio_[0]*100:.1f}%)")
-    ax_right.set_ylabel(f"PC2 ({pca_cross.explained_variance_ratio_[1]*100:.1f}%)")
-    ax_right.legend(loc="upper right", fontsize=7.5)
+    ax_b.set_title("(b) Cross-Platform Harmonization (5,426 Genes)", fontweight="bold", fontsize=8)
+    ax_b.set_xlabel(f"PC1 ({pca_cross.explained_variance_ratio_[0]*100:.1f}%)", fontsize=7.5)
+    ax_b.set_ylabel(f"PC2 ({pca_cross.explained_variance_ratio_[1]*100:.1f}%)", fontsize=7.5)
+    ax_b.legend(loc="upper right", fontsize=6.5)
+
+    # --- Bottom-Left: Tissue Confounding Diagnostic (c) ---
+    ax_c = axes[1, 0]
+    groups = [
+        ("AML (n=37)", 30, 7, 0),
+        ("ALL (n=29)", 25, 4, 0),
+        ("CML (n=22)*", 16, 6, 0),
+        ("MDS (n=10)*", 10, 0, 0),
+        ("BCLL (n=41)*", 2, 38, 1),
+    ]
+
+    y_pos = np.arange(len(groups))
+    bm_pcts = []
+    pb_pcts = []
+    ln_pcts = []
+
+    for name, bm, pb, ln in groups:
+        total = bm + pb + ln
+        bm_pcts.append((bm / total) * 100.0)
+        pb_pcts.append((pb / total) * 100.0)
+        ln_pcts.append((ln / total) * 100.0)
+
+    bm_color = "#2b2b2b"
+    pb_color = "#888888"
+    ln_color = "#e0e0e0"
+
+    ax_c.barh(y_pos, bm_pcts, color=bm_color, edgecolor="black", linewidth=0.5, height=0.55, label="Bone Marrow (BM)")
+    ax_c.barh(y_pos, pb_pcts, left=bm_pcts, color=pb_color, edgecolor="black", linewidth=0.5, height=0.55, label="Peripheral Blood (PB)")
+    ax_c.barh(y_pos, ln_pcts, left=np.array(bm_pcts) + np.array(pb_pcts), color=ln_color, edgecolor="black", linewidth=0.5, height=0.55, label="Lymph Node (LN)")
+
+    ax_c.set_yticks(y_pos)
+    ax_c.set_yticklabels([g[0] for g in groups], fontsize=7, fontweight="medium")
+    ax_c.set_xlabel("Tissue Proportion (%)", fontsize=7.5)
+    ax_c.set_xlim(0, 100)
+    ax_c.set_title("(c) Tissue Confounding Diagnostic", fontweight="bold", fontsize=8)
+    ax_c.legend(loc="lower left", fontsize=6.0, framealpha=0.9)
+
+    table_model = [[25, 4], [30, 7]]
+    fisher_res = stats.fisher_exact(table_model)
+
+    stats_text = (
+        f"ALL vs. AML Modeling:\n"
+        f"  BM: 86.2% vs. 81.1%\n"
+        f"  Fisher's Exact: p={fisher_res.pvalue:.3f} (n.s.)\n"
+        f"*Excluded: BCLL (92.7% PB), MDS (100% BM)"
+    )
+    ax_c.text(
+        0.04,
+        0.58,
+        stats_text,
+        transform=ax_c.transAxes,
+        fontsize=5.5,
+        verticalalignment="top",
+        bbox=dict(boxstyle="round,pad=0.25", facecolor="white", edgecolor="#666666", alpha=0.92),
+    )
+
+    # --- Bottom-Right: 6-Class Global Landscape PCA (d) ---
+    ax_d = axes[1, 1]
+    df_eda = load_dataset("gse51082", level="probes", split="full_eda")
+    meta_cols = ["label", "subtype", "sample_id", "tissue", "disease", "patient_id", "title"]
+    probe_cols = [c for c in df_eda.columns if c not in meta_cols]
+
+    X_eda = df_eda[probe_cols].to_numpy(dtype=float)
+    X_eda_s = StandardScaler().fit_transform(X_eda)
+
+    pca_6cl = PCA(n_components=2, random_state=42)
+    X_eda_pca = pca_6cl.fit_transform(X_eda_s)
+
+    pc1_var = pca_6cl.explained_variance_ratio_[0] * 100.0
+    pc2_var = pca_6cl.explained_variance_ratio_[1] * 100.0
+
+    class_styles = {
+        "AML": {"label": "AML (n=37, Model)", "marker": "o", "color": "#111111", "size": 30, "alpha": 0.85},
+        "PRE B-ALL": {"label": "PRE B-ALL (n=17, Model)", "marker": "s", "color": "#444444", "size": 30, "alpha": 0.85},
+        "T-ALL": {"label": "T-ALL (n=12, Model)", "marker": "D", "color": "#777777", "size": 30, "alpha": 0.85},
+        "BCLL": {"label": "BCLL (n=41, Excl.)", "marker": "v", "color": "#aaaaaa", "size": 26, "alpha": 0.75},
+        "CML": {"label": "CML (n=22, Excl.)", "marker": "^", "color": "#cccccc", "size": 26, "alpha": 0.75},
+        "MDS": {"label": "MDS (n=10, Excl.)", "marker": "X", "color": "#333333", "size": 36, "alpha": 0.85},
+    }
+
+    if style_cfg.get("context") != "grayscale" and "ALL" in style_cfg["palette"] and style_cfg["palette"]["ALL"] != "#333333":
+        class_styles["AML"]["color"] = "#d62728"
+        class_styles["PRE B-ALL"]["color"] = "#1f77b4"
+        class_styles["T-ALL"]["color"] = "#2ca02c"
+        class_styles["BCLL"]["color"] = "#9467bd"
+        class_styles["CML"]["color"] = "#ff7f0e"
+        class_styles["MDS"]["color"] = "#8c564b"
+
+    for disease_key, cfg in class_styles.items():
+        mask = (df_eda["disease"] == disease_key).values
+        ax_d.scatter(
+            X_eda_pca[mask, 0],
+            X_eda_pca[mask, 1],
+            c=cfg["color"],
+            marker=cfg["marker"],
+            label=cfg["label"],
+            s=cfg["size"],
+            alpha=cfg["alpha"],
+            edgecolor="black",
+            linewidth=0.5,
+        )
+
+    ax_d.annotate(
+        "MDS -> AML continuity",
+        xy=(50, -5),
+        xytext=(45, -45),
+        fontsize=5.5,
+        arrowprops=dict(arrowstyle="->", lw=0.6, color="#333333"),
+        bbox=dict(boxstyle="round,pad=0.2", facecolor="white", edgecolor="#888888", alpha=0.9),
+    )
+
+    ax_d.set_title("(d) 6-Class Global Landscape (n=139)", fontweight="bold", fontsize=8)
+    ax_d.set_xlabel(f"PC1 ({pc1_var:.1f}%)", fontsize=7.5)
+    ax_d.set_ylabel(f"PC2 ({pc2_var:.1f}%)", fontsize=7.5)
+    ax_d.legend(loc="upper left", fontsize=5.5, framealpha=0.9, ncol=1)
 
     plt.tight_layout()
     png_path = out_dir / "fig4_batch_effect_diagnostics.png"
@@ -600,6 +714,169 @@ def plot_figure_4_batch_effects(
     plt.close()
 
     print(f"    [+] Saved Figure 4 to: {png_path}")
+    return png_path
+
+    plt.tight_layout()
+    png_path = out_dir / "fig4_batch_effect_diagnostics.png"
+    plt.savefig(png_path, dpi=dpi)
+    if save_pdf:
+        plt.savefig(out_dir / "fig4_batch_effect_diagnostics.pdf")
+    plt.close()
+
+    print(f"    [+] Saved Figure 4 to: {png_path}")
+    return png_path
+
+
+# ==============================================================================
+# Figure 5: Tissue Confounding Diagnostics & 6-Class Global Landscape
+# ==============================================================================
+def plot_figure_5_tissue_and_landscape(
+    style_cfg: Dict,
+    dpi: int = 300,
+    save_pdf: bool = True,
+    out_dir: Path = FIGURES_DIR,
+) -> Path:
+    """
+    Renders Figure 5:
+    (a) Tissue confounding diagnostics: Cross-tabulation of tissue origin (Bone Marrow vs.
+        Peripheral Blood) across ALL, AML, and excluded classes with Fisher's exact test.
+    (b) 6-Class global leukemia transcriptomic landscape (PCA projection on GSE51082, n=139).
+    """
+    print("[*] Generating Figure 5: Tissue Confounding & 6-Class Global Landscape...")
+
+    df_eda = load_dataset("gse51082", level="probes", split="full_eda")
+    meta_cols = ["label", "subtype", "sample_id", "tissue", "disease", "patient_id", "title"]
+    probe_cols = [c for c in df_eda.columns if c not in meta_cols]
+
+    fig, axes = plt.subplots(1, 2, figsize=(7.2, 3.5))
+
+    # --- Left: Tissue Distribution Cross-Tabulation (a) ---
+    ax_left = axes[0]
+
+    # Define cohorts and their tissue counts
+    # ALL combines PRE B-ALL (16 BM, 1 PB) and T-ALL (9 BM, 3 PB) => 25 BM, 4 PB
+    # AML: 30 BM, 7 PB
+    # Excluded: BCLL (2 BM, 38 PB, 1 LN), CML (16 BM, 6 PB), MDS (10 BM, 0 PB)
+    groups = [
+        ("AML (n=37)", 30, 7, 0),
+        ("ALL (n=29)", 25, 4, 0),
+        ("CML (n=22)*", 16, 6, 0),
+        ("MDS (n=10)*", 10, 0, 0),
+        ("BCLL (n=41)*", 2, 38, 1),
+    ]
+
+    y_pos = np.arange(len(groups))
+    bm_pcts = []
+    pb_pcts = []
+    ln_pcts = []
+
+    for name, bm, pb, ln in groups:
+        total = bm + pb + ln
+        bm_pcts.append((bm / total) * 100.0)
+        pb_pcts.append((pb / total) * 100.0)
+        ln_pcts.append((ln / total) * 100.0)
+
+    bm_color = "#2b2b2b"
+    pb_color = "#888888"
+    ln_color = "#e0e0e0"
+
+    ax_left.barh(y_pos, bm_pcts, color=bm_color, edgecolor="black", linewidth=0.6, height=0.55, label="Bone Marrow (BM)")
+    ax_left.barh(y_pos, pb_pcts, left=bm_pcts, color=pb_color, edgecolor="black", linewidth=0.6, height=0.55, label="Peripheral Blood (PB)")
+    ax_left.barh(y_pos, ln_pcts, left=np.array(bm_pcts) + np.array(pb_pcts), color=ln_color, edgecolor="black", linewidth=0.6, height=0.55, label="Lymph Node (LN)")
+
+    ax_left.set_yticks(y_pos)
+    ax_left.set_yticklabels([g[0] for g in groups], fontsize=7.5, fontweight="medium")
+    ax_left.set_xlabel("Tissue Origin Proportion (%)", fontsize=8)
+    ax_left.set_xlim(0, 100)
+    ax_left.set_title("(a) Tissue Confounding Diagnostic", fontweight="bold", fontsize=8.5)
+    ax_left.legend(loc="lower left", fontsize=6.8, framealpha=0.9)
+
+    # Compute 2x2 Fisher exact test for modeling cohort (ALL vs. AML)
+    table_model = [[25, 4], [30, 7]]
+    fisher_res = stats.fisher_exact(table_model)
+
+    stats_text = (
+        f"Modeling Cohort (ALL vs. AML):\n"
+        f"  BM: 86.2% vs. 81.1%\n"
+        f"  Fisher's Exact: OR={fisher_res.statistic:.2f}, p={fisher_res.pvalue:.3f} (n.s.)\n"
+        f"  -> No tissue confounding in ALL/AML\n"
+        f"*Excluded: BCLL (92.7% PB), MDS (100% BM)"
+    )
+    ax_left.text(
+        0.04,
+        0.58,
+        stats_text,
+        transform=ax_left.transAxes,
+        fontsize=6.0,
+        verticalalignment="top",
+        bbox=dict(boxstyle="round,pad=0.3", facecolor="white", edgecolor="#666666", alpha=0.92),
+    )
+
+    # --- Right: 6-Class Global Leukemia Landscape PCA (b) ---
+    ax_right = axes[1]
+
+    X = df_eda[probe_cols].to_numpy(dtype=float)
+    X_s = StandardScaler().fit_transform(X)
+
+    pca_6cl = PCA(n_components=2, random_state=42)
+    X_pca = pca_6cl.fit_transform(X_s)
+
+    pc1_var = pca_6cl.explained_variance_ratio_[0] * 100.0
+    pc2_var = pca_6cl.explained_variance_ratio_[1] * 100.0
+
+    class_styles = {
+        "AML": {"label": "AML (n=37, Modeling)", "marker": "o", "color": "#111111", "size": 36, "alpha": 0.85},
+        "PRE B-ALL": {"label": "PRE B-ALL (n=17, Modeling)", "marker": "s", "color": "#444444", "size": 36, "alpha": 0.85},
+        "T-ALL": {"label": "T-ALL (n=12, Modeling)", "marker": "D", "color": "#777777", "size": 36, "alpha": 0.85},
+        "BCLL": {"label": "BCLL (n=41, Excluded)", "marker": "v", "color": "#aaaaaa", "size": 30, "alpha": 0.75},
+        "CML": {"label": "CML (n=22, Excluded)", "marker": "^", "color": "#cccccc", "size": 30, "alpha": 0.75},
+        "MDS": {"label": "MDS (n=10, Excluded)", "marker": "X", "color": "#333333", "size": 42, "alpha": 0.85},
+    }
+
+    if style_cfg.get("context") != "grayscale" and "ALL" in style_cfg["palette"] and style_cfg["palette"]["ALL"] != "#333333":
+        class_styles["AML"]["color"] = "#d62728"
+        class_styles["PRE B-ALL"]["color"] = "#1f77b4"
+        class_styles["T-ALL"]["color"] = "#2ca02c"
+        class_styles["BCLL"]["color"] = "#9467bd"
+        class_styles["CML"]["color"] = "#ff7f0e"
+        class_styles["MDS"]["color"] = "#8c564b"
+
+    for disease_key, cfg in class_styles.items():
+        mask = (df_eda["disease"] == disease_key).values
+        ax_right.scatter(
+            X_pca[mask, 0],
+            X_pca[mask, 1],
+            c=cfg["color"],
+            marker=cfg["marker"],
+            label=cfg["label"],
+            s=cfg["size"],
+            alpha=cfg["alpha"],
+            edgecolor="black",
+            linewidth=0.5,
+        )
+
+    ax_right.annotate(
+        "Myeloid continuity\n(MDS -> AML)",
+        xy=(50, -5),
+        xytext=(55, -45),
+        fontsize=6.0,
+        arrowprops=dict(arrowstyle="->", lw=0.7, color="#333333"),
+        bbox=dict(boxstyle="round,pad=0.2", facecolor="white", edgecolor="#888888", alpha=0.9),
+    )
+
+    ax_right.set_title("(b) 6-Class Global Landscape (n=139)", fontweight="bold", fontsize=8.5)
+    ax_right.set_xlabel(f"PC1 ({pc1_var:.1f}%)", fontsize=8)
+    ax_right.set_ylabel(f"PC2 ({pc2_var:.1f}%)", fontsize=8)
+    ax_right.legend(loc="upper left", fontsize=5.8, framealpha=0.9, ncol=1)
+
+    plt.tight_layout()
+    png_path = out_dir / "fig5_tissue_confounding_and_landscape.png"
+    plt.savefig(png_path, dpi=dpi)
+    if save_pdf:
+        plt.savefig(out_dir / "fig5_tissue_confounding_and_landscape.pdf")
+    plt.close()
+
+    print(f"    [+] Saved Figure 5 to: {png_path}")
     return png_path
 
 
@@ -624,7 +901,7 @@ def main():
     )
     parser.add_argument(
         "--figure",
-        choices=["all", "fig1", "fig2", "fig3", "fig4"],
+        choices=["all", "fig1", "fig2", "fig3", "fig4", "fig5"],
         default="all",
         help="Target figure to render: 'all' (default), or individual figure id.",
     )
@@ -652,6 +929,8 @@ def main():
         plot_figure_3_heatmap(style_cfg, top_n=40, dpi=args.dpi, save_pdf=save_pdf)
     if args.figure in ["all", "fig4"]:
         plot_figure_4_batch_effects(style_cfg, dpi=args.dpi, save_pdf=save_pdf)
+    if args.figure in ["all", "fig5"]:
+        plot_figure_5_tissue_and_landscape(style_cfg, dpi=args.dpi, save_pdf=save_pdf)
 
     print("\n[OK] All requested EDA figures generated successfully in outputs/figures/.\n")
 

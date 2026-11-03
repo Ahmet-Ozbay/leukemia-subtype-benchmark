@@ -21,7 +21,7 @@ def test_style_presets_configuration():
 
 
 def test_eda_figures_exist_and_non_empty():
-    """Asserts that all 4 figures referenced in the IEEE draft paper exist and are non-empty."""
+    """Asserts that all 5 figures referenced in the IEEE draft paper exist and are non-empty."""
     required_figures = [
         "fig1_expression_distributions.png",
         "fig1_expression_distributions.pdf",
@@ -31,6 +31,8 @@ def test_eda_figures_exist_and_non_empty():
         "fig3_top_genes_heatmap.pdf",
         "fig4_batch_effect_diagnostics.png",
         "fig4_batch_effect_diagnostics.pdf",
+        "fig5_tissue_confounding_and_landscape.png",
+        "fig5_tissue_confounding_and_landscape.pdf",
     ]
 
     for fig_name in required_figures:
