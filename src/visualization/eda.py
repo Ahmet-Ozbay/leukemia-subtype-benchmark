@@ -66,12 +66,27 @@ def plot_figure_1_distributions(
     X_golub_raw, _ = get_feature_and_label_matrices(golub_df)
     X_cs_raw, _ = get_feature_and_label_matrices(coustan_smith_df)
 
+    # Compute exact full-cohort statistics for reporting
+    full_g_raw = X_golub_raw.values.ravel()
+    full_cs_raw = X_cs_raw.values.ravel()
+    median_g = np.median(full_g_raw)
+    skew_g = stats.skew(full_g_raw)
+    median_cs = np.median(full_cs_raw)
+    skew_cs = stats.skew(full_cs_raw)
+
+    full_g_log = np.log2(full_g_raw + 1.0)
+    full_cs_log = np.log2(full_cs_raw + 1.0)
+    std_g_log = np.std(full_g_log)
+    skew_g_log = stats.skew(full_g_log)
+    std_cs_log = np.std(full_cs_log)
+    skew_cs_log = stats.skew(full_cs_log)
+
     # Sample representative values (subset of 50,000 measurements for smooth KDE calculation)
     np.random.seed(42)
-    sample_g_raw = np.random.choice(X_golub_raw.values.ravel(), size=50000, replace=False)
+    sample_g_raw = np.random.choice(full_g_raw, size=50000, replace=False)
     sample_g_log = np.log2(sample_g_raw + 1.0)
 
-    sample_cs_raw = np.random.choice(X_cs_raw.values.ravel(), size=50000, replace=False)
+    sample_cs_raw = np.random.choice(full_cs_raw, size=50000, replace=False)
     sample_cs_log = np.log2(sample_cs_raw + 1.0)
 
     fig, axes = plt.subplots(2, 2, figsize=(7.2, 5.0), sharey="row")
@@ -94,7 +109,7 @@ def plot_figure_1_distributions(
     axes[0, 0].set_ylabel("Density")
     axes[0, 0].set_xlim(0, 16500)
     axes[0, 0].annotate(
-        f"Skewness: {stats.skew(sample_g_raw):.2f}\nMedian: {np.median(sample_g_raw):.1f}",
+        f"Skewness: {skew_g:.2f}\nMedian: {median_g:.1f}",
         xy=(0.58, 0.65),
         xycoords="axes fraction",
         fontsize=8,
@@ -116,7 +131,7 @@ def plot_figure_1_distributions(
     axes[0, 1].set_xlabel("Raw Fluorescence Intensity")
     axes[0, 1].set_xlim(0, 16500)
     axes[0, 1].annotate(
-        f"Skewness: {stats.skew(sample_cs_raw):.2f}\nMedian: {np.median(sample_cs_raw):.1f}",
+        f"Skewness: {skew_cs:.2f}\nMedian: {median_cs:.1f}",
         xy=(0.58, 0.65),
         xycoords="axes fraction",
         fontsize=8,
@@ -139,7 +154,7 @@ def plot_figure_1_distributions(
     axes[1, 0].set_ylabel("Density")
     axes[1, 0].set_xlim(4, 15)
     axes[1, 0].annotate(
-        f"Skewness: {stats.skew(sample_g_log):.2f}\nStd: {np.std(sample_g_log):.2f}",
+        f"Skewness: {skew_g_log:.2f}\nStd: {std_g_log:.2f}",
         xy=(0.58, 0.65),
         xycoords="axes fraction",
         fontsize=8,
@@ -161,7 +176,7 @@ def plot_figure_1_distributions(
     axes[1, 1].set_xlabel(r"$\log_2(\text{Intensity} + 1)$")
     axes[1, 1].set_xlim(4, 15)
     axes[1, 1].annotate(
-        f"Skewness: {stats.skew(sample_cs_log):.2f}\nStd: {np.std(sample_cs_log):.2f}",
+        f"Skewness: {skew_cs_log:.2f}\nStd: {std_cs_log:.2f}",
         xy=(0.58, 0.65),
         xycoords="axes fraction",
         fontsize=8,
@@ -341,7 +356,7 @@ def plot_figure_3_heatmap(
     X_raw, y = get_feature_and_label_matrices(df)
     X_log = np.log2(X_raw + 1.0)
 
-    # Identify differentially expressed genes using Welch's t-test
+    # Identify differentially expressed genes using both Welch's t-test and Mann-Whitney U test
     all_mask = (y == 0).values
     aml_mask = (y == 1).values
 
@@ -349,25 +364,32 @@ def plot_figure_3_heatmap(
     for gene in X_log.columns:
         all_vals = X_log.loc[all_mask, gene]
         aml_vals = X_log.loc[aml_mask, gene]
-        t_stat, p_val = stats.ttest_ind(aml_vals, all_vals, equal_var=False)
-        stats_list.append({"gene": gene, "t_stat": t_stat, "p_val": p_val})
+        t_stat, p_welch = stats.ttest_ind(aml_vals, all_vals, equal_var=False)
+        u_stat, p_mwu = stats.mannwhitneyu(aml_vals, all_vals, alternative="two-sided")
+        stats_list.append({
+            "gene": gene,
+            "t_stat": t_stat,
+            "p_welch": p_welch,
+            "u_stat": u_stat,
+            "p_mwu": p_mwu,
+        })
 
     res_df = pd.DataFrame(stats_list)
-    # Benjamini-Hochberg FDR correction
-    res_df = res_df.sort_values("p_val").reset_index(drop=True)
     n_genes = len(res_df)
-    res_df["fdr"] = res_df["p_val"] * n_genes / (res_df.index + 1)
-    # Monotonicity enforcement
-    res_df["fdr"] = np.minimum.accumulate(res_df["fdr"].iloc[::-1])[::-1]
 
-    # Select top 40 genes
+    # Benjamini-Hochberg FDR correction on both statistical tests
+    for p_col, fdr_col in [("p_welch", "fdr_welch"), ("p_mwu", "fdr_mwu")]:
+        res_df = res_df.sort_values(p_col).reset_index(drop=True)
+        res_df[fdr_col] = res_df[p_col] * n_genes / (res_df.index + 1)
+        res_df[fdr_col] = np.minimum.accumulate(res_df[fdr_col].iloc[::-1])[::-1]
+
+    # Strictly data-driven selection of top N genes passing FDR < 0.001
+    res_df = res_df.sort_values("p_welch").reset_index(drop=True)
+    fdr_sig = res_df[res_df["fdr_welch"] < 0.001]
+    top_genes = fdr_sig.head(top_n)["gene"].tolist()
+
+    # Canonical biomarkers for biological interpretation
     canonical_biomarkers = {"CST3", "CD33", "MPO", "LYZ", "FAH", "CD19", "MME"}
-    top_genes = res_df.head(top_n)["gene"].tolist()
-
-    # Ensure canonical markers are present if statistically strong
-    for marker in canonical_biomarkers:
-        if marker in X_log.columns and marker not in top_genes:
-            top_genes[-1] = marker
 
     # Extract expression sub-matrix and compute z-score per gene across samples
     X_sub = X_log[top_genes].T  # genes x samples
