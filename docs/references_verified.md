@@ -29,11 +29,13 @@ Verified publication metadata, volumes, issue numbers, page ranges, and DOIs for
 
 [11] J. Gillariose, J. Joseph, and C. Chesneau, “Lasso and ridge regression: A comprehensive review of applications and developments in machine learning,” International Journal of Data Science and Analytics, vol. 21, no. 1, art. no. 7, pp. 1–20, 2026. https://doi.org/10.1007/s41060-025-00957-y
 
-[12] B. Neekhra, D. Gupta, and P. P. Chakrabarti, “On the (in)significance of feature selection in high-dimensional datasets,” arXiv preprint arXiv:2508.03593, Aug. 2025. https://doi.org/10.48550/arXiv.2508.03593
+[12] B. Neekhra, D. Gupta, and P. P. Chakrabarti, “On the (in)significance of feature selection in high-dimensional datasets,” arXiv preprint arXiv:2508.03593, Aug. 2025. https://doi.org/10.48550/arXiv.2508.03593 (Preprint)
 
 [13] M. Z. Naser, “A review of machine learning with small and limited data,” Journal of Big Data, vol. 13, no. 1, p. 18, Jan. 2026. https://doi.org/10.1186/s40537-025-01346-9
 
 [14] N. Kandi, D. S. Charan, V. Gosu, V. C. S., and H. Y. Patil, “Analysis of leukemia classification using micro-array data with deep learning models,” Procedia Computer Science, vol. 283, pp. 306–317, Jan. 2026. https://doi.org/10.1016/j.procs.2026.06.118
 
 [15] F. Vello, S. Fortuna, and F. Fogolari, “Entropy estimation: From statistical physics to classification,” International Journal of Molecular Sciences, vol. 27, no. 20, p. 9361, Oct. 2026. https://doi.org/10.3390/ijms27209361
+
+[16] T. Haferlach et al., “Clinical utility of microarray-based gene expression profiling in the diagnosis and subclassification of leukemia: Report on the International MILE Study Group,” Journal of Clinical Oncology, vol. 28, no. 15, pp. 2529–2537, May 2010. https://doi.org/10.1200/JCO.2009.23.4732
 ```
