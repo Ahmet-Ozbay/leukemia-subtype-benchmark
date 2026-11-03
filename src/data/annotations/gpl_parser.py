@@ -183,34 +183,34 @@ def extract_golub_annotations(
     return df
 
 
-def extract_armstrong_annotations(
+def extract_coustan_smith_annotations(
     out_dir: Path = ANNOTATIONS_DIR,
     drop_multi_mapped: bool = False,
 ) -> pd.DataFrame:
     """
-    Extracts Armstrong (GPL96) probe mapping and persists to Parquet and CSV.
-    Validates that all feature probes in processed Armstrong parquet are covered.
+    Extracts Coustan-Smith (GPL96) probe mapping and persists to Parquet and CSV.
+    Validates that all feature probes in processed Coustan-Smith parquet are covered.
     """
     out_dir.mkdir(parents=True, exist_ok=True)
     df = parse_gpl96_annotations(drop_multi_mapped=drop_multi_mapped)
 
     # Validate against processed dataset if available
-    armstrong_path = PROBE_DATA_DIR / "armstrong_full.parquet"
-    if not armstrong_path.exists():
-        armstrong_path = PROCESSED_DATA_DIR / "armstrong_full.parquet"
-    if armstrong_path.exists():
-        arm_df = pd.read_parquet(armstrong_path)
-        feature_probes = [c for c in arm_df.columns if c not in ["label", "subtype"]]
+    coustan_smith_path = PROBE_DATA_DIR / "coustan_smith_full.parquet"
+    if not coustan_smith_path.exists():
+        coustan_smith_path = PROCESSED_DATA_DIR / "coustan_smith_full.parquet"
+    if coustan_smith_path.exists():
+        cs_df = pd.read_parquet(coustan_smith_path)
+        feature_probes = [c for c in cs_df.columns if c not in ["label", "subtype"]]
         annotated_probes = set(df["probe_id"])
         missing = set(feature_probes) - annotated_probes
-        assert len(missing) == 0, f"Armstrong features missing from GPL96 annotation: {len(missing)} probes"
+        assert len(missing) == 0, f"Coustan-Smith features missing from GPL96 annotation: {len(missing)} probes"
 
-    parquet_path = out_dir / "armstrong_probe_to_gene.parquet"
-    csv_path = out_dir / "armstrong_probe_to_gene.csv"
+    parquet_path = out_dir / "coustan_smith_probe_to_gene.parquet"
+    csv_path = out_dir / "coustan_smith_probe_to_gene.csv"
     df.to_parquet(parquet_path, index=False)
     df.to_csv(csv_path, index=False)
 
-    print(f"    [+] Saved Armstrong annotations: {parquet_path.name} ({len(df)} probes, {df['is_mapped'].sum()} mapped)")
+    print(f"    [+] Saved Coustan-Smith annotations: {parquet_path.name} ({len(df)} probes, {df['is_mapped'].sum()} mapped)")
     return df
 
 
@@ -233,7 +233,7 @@ def load_annotation_mapping(
 
     if cohort == "golub":
         return extract_golub_annotations(out_dir=annotations_dir, drop_multi_mapped=drop_multi_mapped)
-    elif cohort == "armstrong":
-        return extract_armstrong_annotations(out_dir=annotations_dir, drop_multi_mapped=drop_multi_mapped)
+    elif cohort == "coustan_smith":
+        return extract_coustan_smith_annotations(out_dir=annotations_dir, drop_multi_mapped=drop_multi_mapped)
     else:
-        raise ValueError(f"Unknown cohort '{cohort}'. Supported: 'golub', 'armstrong'.")
+        raise ValueError(f"Unknown cohort '{cohort}'. Supported: 'golub', 'coustan_smith'.")

@@ -10,14 +10,14 @@ from typing import Dict, Type
 
 import pandas as pd
 
-from src.data.processors.armstrong import ArmstrongProcessor
 from src.data.processors.base import BaseDatasetProcessor
+from src.data.processors.coustan_smith import CoustanSmithProcessor
 from src.data.processors.golub import GolubProcessor
 from src.data.processors.mile import MileProcessor
 
 DATASET_REGISTRY: Dict[str, Type[BaseDatasetProcessor]] = {
     "golub": GolubProcessor,
-    "armstrong": ArmstrongProcessor,
+    "coustan_smith": CoustanSmithProcessor,
     "mile": MileProcessor,
 }
 

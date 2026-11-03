@@ -1,5 +1,5 @@
 """
-Cross-platform gene harmonization and biomarker reporting for Golub and Armstrong cohorts.
+Cross-platform gene harmonization and biomarker reporting for Golub and Coustan-Smith cohorts.
 Aligns feature spaces to common HUGO gene symbols and outputs verification tables.
 """
 
@@ -75,18 +75,18 @@ def df_to_markdown(df: pd.DataFrame) -> str:
 
 def get_shared_gene_symbols(
     golub_mapping: pd.DataFrame,
-    armstrong_mapping: pd.DataFrame,
+    coustan_smith_mapping: pd.DataFrame,
 ) -> List[str]:
     """Calculates the intersection of valid HUGO gene symbols across both cohorts."""
     g_syms = set(golub_mapping[golub_mapping["is_mapped"]]["gene_symbol"].dropna()) - {""}
-    a_syms = set(armstrong_mapping[armstrong_mapping["is_mapped"]]["gene_symbol"].dropna()) - {""}
-    shared = sorted(list(g_syms.intersection(a_syms)))
+    cs_syms = set(coustan_smith_mapping[coustan_smith_mapping["is_mapped"]]["gene_symbol"].dropna()) - {""}
+    shared = sorted(list(g_syms.intersection(cs_syms)))
     return shared
 
 
 def generate_harmonization_report(
     golub_mapping: pd.DataFrame,
-    armstrong_mapping: pd.DataFrame,
+    coustan_smith_mapping: pd.DataFrame,
     out_dir: Path = TABLES_DIR,
 ) -> Dict[str, pd.DataFrame]:
     """
@@ -95,56 +95,56 @@ def generate_harmonization_report(
     """
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    shared_genes = get_shared_gene_symbols(golub_mapping, armstrong_mapping)
+    shared_genes = get_shared_gene_symbols(golub_mapping, coustan_smith_mapping)
     g_mapped = golub_mapping[golub_mapping["is_mapped"]]
-    a_mapped = armstrong_mapping[armstrong_mapping["is_mapped"]]
+    cs_mapped = coustan_smith_mapping[coustan_smith_mapping["is_mapped"]]
 
     g_syms_count = g_mapped["gene_symbol"].nunique()
-    a_syms_count = a_mapped["gene_symbol"].nunique()
+    cs_syms_count = cs_mapped["gene_symbol"].nunique()
     g_cov = (len(shared_genes) / g_syms_count) * 100 if g_syms_count else 0.0
-    a_cov = (len(shared_genes) / a_syms_count) * 100 if a_syms_count else 0.0
+    cs_cov = (len(shared_genes) / cs_syms_count) * 100 if cs_syms_count else 0.0
 
     # 1. Summary comparison table
     summary_data = [
         {
             "Metric": "Cohort / Publication",
             "Golub et al. (1999)": "Golub et al. (1999)",
-            "Armstrong et al. (2002)": "Armstrong et al. (GSE28497)",
+            "Coustan-Smith et al. (2011)": "Coustan-Smith et al. (GSE28497)",
         },
         {
             "Metric": "GEO Platform ID",
             "Golub et al. (1999)": "GPL80",
-            "Armstrong et al. (2002)": "GPL96",
+            "Coustan-Smith et al. (2011)": "GPL96",
         },
         {
             "Metric": "Array Platform Name",
             "Golub et al. (1999)": "Affymetrix HuGeneFL (Hu6800)",
-            "Armstrong et al. (2002)": "Affymetrix Human Genome U133A",
+            "Coustan-Smith et al. (2011)": "Affymetrix Human Genome U133A",
         },
         {
             "Metric": "Total Probe Sets (p)",
             "Golub et al. (1999)": str(len(golub_mapping)),
-            "Armstrong et al. (2002)": str(len(armstrong_mapping)),
+            "Coustan-Smith et al. (2011)": str(len(coustan_smith_mapping)),
         },
         {
             "Metric": "Mapped Probes to HUGO Symbols",
             "Golub et al. (1999)": f"{len(g_mapped)} ({len(g_mapped)/len(golub_mapping):.1%})",
-            "Armstrong et al. (2002)": f"{len(a_mapped)} ({len(a_mapped)/len(armstrong_mapping):.1%})",
+            "Coustan-Smith et al. (2011)": f"{len(cs_mapped)} ({len(cs_mapped)/len(coustan_smith_mapping):.1%})",
         },
         {
             "Metric": "Control & Unmapped Probes",
             "Golub et al. (1999)": str(len(golub_mapping) - len(g_mapped)),
-            "Armstrong et al. (2002)": str(len(armstrong_mapping) - len(a_mapped)),
+            "Coustan-Smith et al. (2011)": str(len(coustan_smith_mapping) - len(cs_mapped)),
         },
         {
             "Metric": "Unique HUGO Gene Symbols",
             "Golub et al. (1999)": str(g_syms_count),
-            "Armstrong et al. (2002)": str(a_syms_count),
+            "Coustan-Smith et al. (2011)": str(cs_syms_count),
         },
         {
             "Metric": "Cross-Platform Overlapping Genes",
             "Golub et al. (1999)": f"{len(shared_genes)} ({g_cov:.1f}% of Golub genes)",
-            "Armstrong et al. (2002)": f"{len(shared_genes)} ({a_cov:.1f}% of Armstrong genes)",
+            "Coustan-Smith et al. (2011)": f"{len(shared_genes)} ({cs_cov:.1f}% of Coustan-Smith genes)",
         },
     ]
 
@@ -162,7 +162,7 @@ def generate_harmonization_report(
     for bm in KEY_BIOMARKERS:
         sym = bm["gene_symbol"]
         g_probes = golub_mapping[golub_mapping["gene_symbol"] == sym]["probe_id"].tolist()
-        a_probes = armstrong_mapping[armstrong_mapping["gene_symbol"] == sym]["probe_id"].tolist()
+        cs_probes = coustan_smith_mapping[coustan_smith_mapping["gene_symbol"] == sym]["probe_id"].tolist()
 
         biomarker_rows.append(
             {
@@ -171,8 +171,8 @@ def generate_harmonization_report(
                 "Diagnostic Role": bm["clinical_role"],
                 "Subtype": bm["subtype_association"],
                 "Golub (Hu6800 / GPL80) Probes": ", ".join(g_probes) if g_probes else "N/A",
-                "Armstrong (HG-U133A / GPL96) Probes": ", ".join(a_probes) if a_probes else "N/A",
-                "Cross-Platform Match": "Yes" if (g_probes and a_probes) else "No",
+                "Coustan-Smith (HG-U133A / GPL96) Probes": ", ".join(cs_probes) if cs_probes else "N/A",
+                "Cross-Platform Match": "Yes" if (g_probes and cs_probes) else "No",
             }
         )
 
@@ -193,9 +193,9 @@ def generate_harmonization_report(
 
 def harmonize_cohort_genes(
     golub_df: pd.DataFrame,
-    armstrong_df: pd.DataFrame,
+    coustan_smith_df: pd.DataFrame,
     golub_mapping: pd.DataFrame,
-    armstrong_mapping: pd.DataFrame,
+    coustan_smith_mapping: pd.DataFrame,
     strategy: str = "max_variance",
     drop_multi_mapped: bool = False,
     out_dir: Path = HARMONIZED_DATA_DIR,
@@ -204,7 +204,7 @@ def harmonize_cohort_genes(
     Collapses both cohorts to gene symbols using zero-leakage aggregation and harmonizes
     feature space strictly to the common gene intersection.
     """
-    shared_genes = get_shared_gene_symbols(golub_mapping, armstrong_mapping)
+    shared_genes = get_shared_gene_symbols(golub_mapping, coustan_smith_mapping)
     print(f"[*] Harmonizing cohorts on {len(shared_genes)} shared HUGO gene symbols (Strategy: {strategy})...")
 
     # Collapse Golub
@@ -215,10 +215,10 @@ def harmonize_cohort_genes(
         drop_multi_mapped=drop_multi_mapped,
     )
 
-    # Collapse Armstrong
-    armstrong_collapsed, _ = collapse_dataset(
-        train_df=armstrong_df,
-        mapping_df=armstrong_mapping,
+    # Collapse Coustan-Smith
+    coustan_smith_collapsed, _ = collapse_dataset(
+        train_df=coustan_smith_df,
+        mapping_df=coustan_smith_mapping,
         strategy=strategy,
         drop_multi_mapped=drop_multi_mapped,
     )
@@ -227,22 +227,22 @@ def harmonize_cohort_genes(
 
     # Subset strictly to shared genes with identical column ordering
     golub_harmonized = pd.concat([golub_collapsed[shared_genes], golub_collapsed[meta_cols]], axis=1)
-    armstrong_harmonized = pd.concat([armstrong_collapsed[shared_genes], armstrong_collapsed[meta_cols]], axis=1)
+    coustan_smith_harmonized = pd.concat([coustan_smith_collapsed[shared_genes], coustan_smith_collapsed[meta_cols]], axis=1)
 
     # Invariant assertions
-    assert list(golub_harmonized.columns) == list(armstrong_harmonized.columns), "Harmonized feature columns do not match!"
+    assert list(golub_harmonized.columns) == list(coustan_smith_harmonized.columns), "Harmonized feature columns do not match!"
     assert not golub_harmonized.isna().any().any(), "Harmonized Golub matrix contains NaNs!"
-    assert not armstrong_harmonized.isna().any().any(), "Harmonized Armstrong matrix contains NaNs!"
+    assert not coustan_smith_harmonized.isna().any().any(), "Harmonized Coustan-Smith matrix contains NaNs!"
 
     # Export
     out_dir.mkdir(parents=True, exist_ok=True)
     golub_out = out_dir / "golub_harmonized_genes.parquet"
-    armstrong_out = out_dir / "armstrong_harmonized_genes.parquet"
+    coustan_smith_out = out_dir / "coustan_smith_harmonized_genes.parquet"
 
     golub_harmonized.to_parquet(golub_out)
-    armstrong_harmonized.to_parquet(armstrong_out)
+    coustan_smith_harmonized.to_parquet(coustan_smith_out)
 
     print(f"    [+] Saved: {golub_out.name} (Shape: {golub_harmonized.shape})")
-    print(f"    [+] Saved: {armstrong_out.name} (Shape: {armstrong_harmonized.shape})")
+    print(f"    [+] Saved: {coustan_smith_out.name} (Shape: {coustan_smith_harmonized.shape})")
 
-    return golub_harmonized, armstrong_harmonized
+    return golub_harmonized, coustan_smith_harmonized

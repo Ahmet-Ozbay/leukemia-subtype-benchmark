@@ -19,8 +19,8 @@ if str(PROJECT_ROOT) not in sys.path:
 
 from src.data.processors import (
     DATASET_REGISTRY,
-    ArmstrongProcessor,
     BaseDatasetProcessor,
+    CoustanSmithProcessor,
     GolubProcessor,
     MileProcessor,
     process_all_available,
@@ -30,7 +30,7 @@ from src.data.processors import (
 __all__ = [
     "BaseDatasetProcessor",
     "GolubProcessor",
-    "ArmstrongProcessor",
+    "CoustanSmithProcessor",
     "MileProcessor",
     "DATASET_REGISTRY",
     "process_dataset",
@@ -47,7 +47,7 @@ def main():
         "--dataset",
         choices=list(DATASET_REGISTRY.keys()) + ["all"],
         default="all",
-        help="Target dataset to parse: 'golub', 'armstrong', 'mile', or 'all' (default).",
+        help="Target dataset to parse: 'golub', 'coustan_smith', 'mile', or 'all' (default).",
     )
     args = parser.parse_args()
 
