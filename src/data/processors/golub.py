@@ -8,9 +8,15 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Dict
 
+import numpy as np
 import pandas as pd
 
-from src.config import GOLUB_RAW_DIR, LABEL_MAP
+from src.config import (
+    EXPRESSION_CLIP_MAX,
+    EXPRESSION_CLIP_MIN,
+    GOLUB_RAW_DIR,
+    LABEL_MAP,
+)
 from src.data.processors.base import BaseDatasetProcessor
 
 
@@ -81,17 +87,33 @@ class GolubProcessor(BaseDatasetProcessor):
 
         train_df = train_raw.join(labels[["label", "subtype"]], how="inner")
         test_df = test_raw.join(labels[["label", "subtype"]], how="inner")
-        combined_df = pd.concat([train_df, test_df], axis=0)
+
+        # Sort patient_id numerically (1..38 for train, 39..72 for test)
+        train_df = train_df.loc[sorted(train_df.index, key=lambda x: int(x))]
+        test_df = test_df.loc[sorted(test_df.index, key=lambda x: int(x))]
+        assert set(train_df.index).isdisjoint(set(test_df.index)), "Train/Test ID overlap!"
 
         meta_cols = ["label", "subtype"]
-        feature_cols = [c for c in combined_df.columns if c not in meta_cols]
+        feature_cols = [c for c in train_df.columns if c not in meta_cols]
 
-        cleaned_features = self.clean_microarray_matrix(combined_df[feature_cols])
-        sanitized_full = pd.concat([cleaned_features, combined_df[meta_cols]], axis=1)
+        # Clean train independently; fit medians on train_df ONLY to prevent leakage
+        train_clean = self.clean_microarray_matrix(train_df[feature_cols])
+        train_medians = train_clean.median()
 
-        sanitized_train = sanitized_full.loc[train_df.index]
-        sanitized_test = sanitized_full.loc[test_df.index]
+        test_clean = (
+            test_df[feature_cols]
+            .replace([np.inf, -np.inf], np.nan)
+            .apply(pd.to_numeric, errors="coerce")
+            .clip(lower=EXPRESSION_CLIP_MIN, upper=EXPRESSION_CLIP_MAX)
+            .fillna(train_medians)
+        )
 
+        sanitized_train = pd.concat([train_clean, train_df[meta_cols]], axis=1)
+        sanitized_test = pd.concat([test_clean, test_df[meta_cols]], axis=1)
+        sanitized_full = pd.concat([sanitized_train, sanitized_test], axis=0)
+
+        self.validate_processed_matrix(sanitized_train)
+        self.validate_processed_matrix(sanitized_test)
         self.validate_processed_matrix(sanitized_full)
 
         # Output persistence compatible with test suite

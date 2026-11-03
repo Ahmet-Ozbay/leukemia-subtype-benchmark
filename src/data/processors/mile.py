@@ -6,6 +6,7 @@ and exports clean Parquet matrix.
 
 from __future__ import annotations
 
+import re
 from typing import Dict, Optional
 
 import pandas as pd
@@ -42,10 +43,17 @@ class MileProcessor(BaseDatasetProcessor):
         # MILE contains >2000 samples across >15 subtypes. Subsetting strictly for ALL and AML:
         def filter_mile(text: str) -> Optional[str]:
             val = str(text).upper()
-            if "ACUTE MYELOID LEUKEMIA" in val or "AML" in val:
-                return "AML"
-            if "ACUTE LYMPHOBLASTIC LEUKEMIA" in val or "ALL" in val:
+            # 1. Exclude healthy controls, non-leukemia, MDS, CML, CLL, and ambiguous MLL
+            if any(k in val for k in ["HEALTHY", "NORMAL", "NON-LEUKEMIA", "MDS", "CML", "CLL", "MLL"]):
+                return None
+            # 2. Check ALL and TEL-AML1 / ETV6-RUNX1 (t(12;21) B-ALL) BEFORE checking AML
+            if "TEL-AML1" in val or "ETV6-RUNX1" in val or "LYMPHOBLASTIC" in val:
                 return "ALL"
+            if re.search(r"\b(?:B-ALL|T-ALL|PRE-B-ALL|C-ALL|ALL)\b", val):
+                return "ALL"
+            # 3. Match true Acute Myeloid Leukemia (AML) on word boundaries
+            if "ACUTE MYELOID" in val or re.search(r"\bAML\b", val):
+                return "AML"
             return None
 
         pheno["subtype"] = pheno["characteristics_ch1"].apply(filter_mile)
