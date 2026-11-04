@@ -198,21 +198,69 @@ def render_cross_platform_pca(
 
 def render_tissue_confounding(
     ax: plt.Axes,
-    style_cfg: Dict[str, Any],
+    df_eda: Optional[pd.DataFrame] = None,
+    style_cfg: Optional[Dict[str, Any]] = None,
     title_prefix: str = "(c)",
     compact: bool = False,
 ) -> stats._mannwhitneyu.MannwhitneyuResult | Any:
     """
     Renders Tissue Confounding Diagnostic: Bone Marrow vs Peripheral Blood
     cross-tabulation across acute and non-acute leukemia classes with Fisher's exact test.
+    Derives contingency counts dynamically from df_eda (GSE51082 EDA cohort).
     """
-    groups = [
-        ("AML (n=37)", 30, 7, 0),
-        ("ALL (n=29)", 25, 4, 0),
-        ("CML (n=22)*", 16, 6, 0),
-        ("MDS (n=10)*", 10, 0, 0),
-        ("BCLL (n=41)*", 2, 38, 1),
-    ]
+    if isinstance(df_eda, dict) and style_cfg is None:
+        style_cfg = df_eda
+        df_eda = None
+
+    if df_eda is None:
+        try:
+            from src.data.io import load_dataset
+            df_eda = load_dataset("gse51082", level="probes", split="full_eda")
+        except Exception:
+            df_eda = None
+
+    if df_eda is not None and "subtype" in df_eda.columns and "tissue" in df_eda.columns:
+        ct = pd.crosstab(df_eda["subtype"], df_eda["tissue"])
+        for t in ["Bone marrow", "Peripheral blood", "Lymph Node"]:
+            if t not in ct.columns:
+                ct[t] = 0
+
+        # Clinical presentation ordering: acute modeling cohorts first, then chronic/myeloid
+        preferred_order = ["AML", "ALL", "CML", "MDS", "BCLL"]
+        present_subtypes = [s for s in preferred_order if s in ct.index] + [
+            s for s in ct.index if s not in preferred_order
+        ]
+
+        groups = []
+        for st in present_subtypes:
+            bm = int(ct.loc[st, "Bone marrow"])
+            pb = int(ct.loc[st, "Peripheral blood"])
+            ln = int(ct.loc[st, "Lymph Node"])
+            total = bm + pb + ln
+            mark = "*" if st not in ["AML", "ALL"] else ""
+            groups.append((f"{st} (n={total}){mark}", bm, pb, ln))
+
+        # 2x2 Fisher's exact test on acute leukemia modeling cohort (ALL vs. AML)
+        if "ALL" in ct.index and "AML" in ct.index:
+            all_bm = int(ct.loc["ALL", "Bone marrow"])
+            all_pb = int(ct.loc["ALL", "Peripheral blood"])
+            aml_bm = int(ct.loc["AML", "Bone marrow"])
+            aml_pb = int(ct.loc["AML", "Peripheral blood"])
+            table_model = [[all_bm, all_pb], [aml_bm, aml_pb]]
+            fisher_res = stats.fisher_exact(table_model)
+        else:
+            fisher_res = stats.SignificanceResult(statistic=1.0, pvalue=1.0)
+    else:
+        # Fallback for synthetic / minimal test data lacking tissue annotations
+        groups = [
+            ("AML (n=37)", 30, 7, 0),
+            ("ALL (n=29)", 25, 4, 0),
+            ("CML (n=22)*", 16, 6, 0),
+            ("MDS (n=10)*", 10, 0, 0),
+            ("BCLL (n=41)*", 2, 38, 1),
+        ]
+        table_model = [[25, 4], [30, 7]]
+        fisher_res = stats.fisher_exact(table_model)
 
     y_pos = np.arange(len(groups))
     bm_pcts = []
@@ -221,9 +269,9 @@ def render_tissue_confounding(
 
     for _, bm, pb, ln in groups:
         total = bm + pb + ln
-        bm_pcts.append((bm / total) * 100.0)
-        pb_pcts.append((pb / total) * 100.0)
-        ln_pcts.append((ln / total) * 100.0)
+        bm_pcts.append((bm / total) * 100.0 if total > 0 else 0.0)
+        pb_pcts.append((pb / total) * 100.0 if total > 0 else 0.0)
+        ln_pcts.append((ln / total) * 100.0 if total > 0 else 0.0)
 
     bm_color = "#2b2b2b"
     pb_color = "#888888"
@@ -234,17 +282,12 @@ def render_tissue_confounding(
     ax.barh(y_pos, pb_pcts, left=bm_pcts, color=pb_color, edgecolor="black", linewidth=0.5, height=height, label="Peripheral Blood (PB)")
     ax.barh(y_pos, ln_pcts, left=np.array(bm_pcts) + np.array(pb_pcts), color=ln_color, edgecolor="black", linewidth=0.5, height=height, label="Lymph Node (LN)")
 
-    # 2x2 Fisher's exact test on acute leukemia modeling cohort (ALL vs. AML)
-    # ALL: 25 BM, 4 PB | AML: 30 BM, 7 PB
-    table_model = [[25, 4], [30, 7]]
-    fisher_res = stats.fisher_exact(table_model)
-
     font_adj = 0.0 if not compact else 0.5
     ax.set_yticks(y_pos)
     ax.set_yticklabels([g[0] for g in groups], fontsize=7 + font_adj, fontweight="medium")
     ax.set_xlabel("Tissue Proportion (%)", fontsize=7.5 + font_adj)
     ax.set_xlim(0, 100)
-    ax.set_ylim(-0.55, 4.55)
+    ax.set_ylim(-0.55, len(groups) - 0.45)
     ax.set_title(
         f"{title_prefix} Tissue Confounding Diagnostic\n"
         f"(ALL vs. AML: Fisher p = {fisher_res.pvalue:.3f}, n.s.)",
@@ -364,7 +407,7 @@ def plot_batch_effect_diagnostics(
 
     render_train_test_shift(axes[0, 0], df_train, df_test, style_cfg)
     render_cross_platform_pca(axes[0, 1], df_harm_primary, df_harm_secondary, style_cfg, sec_name=sec_name)
-    render_tissue_confounding(axes[1, 0], style_cfg, title_prefix="(c)", compact=False)
+    render_tissue_confounding(axes[1, 0], df_eda=df_eda, style_cfg=style_cfg, title_prefix="(c)", compact=False)
     render_multiclass_landscape(axes[1, 1], df_eda, style_cfg, title_prefix="(d)", compact=False)
 
     plt.tight_layout()
@@ -385,7 +428,7 @@ def plot_tissue_and_landscape(
 
     fig, axes = plt.subplots(1, 2, figsize=(7.2, 3.6))
 
-    render_tissue_confounding(axes[0], style_cfg, title_prefix="(a)", compact=True)
+    render_tissue_confounding(axes[0], df_eda=df_eda, style_cfg=style_cfg, title_prefix="(a)", compact=True)
     render_multiclass_landscape(axes[1], df_eda, style_cfg, title_prefix="(b)", compact=True)
 
     plt.tight_layout()

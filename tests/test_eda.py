@@ -172,6 +172,36 @@ def test_diagnostics_panels_and_figures_synthetic(synthetic_expression_data):
     plt.close(fig5)
 
 
+def test_render_tissue_confounding_dynamic_calculation():
+    """Verifies that render_tissue_confounding derives contingency counts and Fisher exact test directly from df_eda."""
+    style_cfg = apply_style("grayscale")
+    fig, ax = plt.subplots(figsize=(4, 3))
+
+    # Synthetic dataframe with custom contingency structure
+    data = {
+        "subtype": ["ALL"] * 29 + ["AML"] * 37 + ["BCLL"] * 41,
+        "tissue": (
+            ["Bone marrow"] * 25 + ["Peripheral blood"] * 4 +
+            ["Bone marrow"] * 30 + ["Peripheral blood"] * 7 +
+            ["Bone marrow"] * 2 + ["Peripheral blood"] * 38 + ["Lymph Node"] * 1
+        ),
+    }
+    df_tissue = pd.DataFrame(data)
+
+    res = render_tissue_confounding(ax, df_eda=df_tissue, style_cfg=style_cfg, title_prefix="(a)")
+    assert res is not None
+    # Verify exact Fisher test odds ratio = (25*7)/(4*30) = 1.45833...
+    assert np.isclose(res.statistic, 1.4583333333333333)
+    assert np.isclose(res.pvalue, 0.7429623442844667)
+
+    # Check y-axis labels were dynamically derived with exact sample counts
+    yticklabels = [t.get_text() for t in ax.get_yticklabels()]
+    assert any("AML (n=37)" in label for label in yticklabels)
+    assert any("ALL (n=29)" in label for label in yticklabels)
+    assert any("BCLL (n=41)*" in label for label in yticklabels)
+    plt.close(fig)
+
+
 def test_eda_figures_exist_and_non_empty():
     """Asserts that all 5 figures referenced in the IEEE draft paper exist and are non-empty."""
     required_figures = [
