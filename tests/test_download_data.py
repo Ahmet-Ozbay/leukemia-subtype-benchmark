@@ -120,10 +120,10 @@ def test_download_geo_cache_hit(tmp_path):
 def test_download_geo_force_unlinks_existing(tmp_path, monkeypatch):
     """When force=True, existing files are deleted before GEOparse download."""
     dest_dir = tmp_path
-    geo_dir = dest_dir / "coustan_smith"
+    geo_dir = dest_dir / "mile_study"
     geo_dir.mkdir(parents=True)
 
-    old_file = geo_dir / "GSE28497_family.soft.gz"
+    old_file = geo_dir / "GSE13159_family.soft.gz"
     old_file.write_bytes(b"x" * 2048)
 
     mock_geoparse = MagicMock()
@@ -136,7 +136,7 @@ def test_download_geo_force_unlinks_existing(tmp_path, monkeypatch):
     mock_geoparse.get_GEO.side_effect = fake_get_geo
     monkeypatch.setitem(__import__("sys").modules, "GEOparse", mock_geoparse)
 
-    success = download_geo("GSE28497", "coustan_smith", dest_dir, force=True)
+    success = download_geo("GSE13159", "mile_study", dest_dir, force=True)
     assert success is True
     # The old file should have been unlinked
     assert not old_file.exists()
@@ -158,5 +158,5 @@ def test_download_gse51082_cache_hit(tmp_path):
 # ==============================================================================
 def test_downloaders_registry_completeness():
     """Ensures all required cohorts are present in the DOWNLOADERS dispatch table."""
-    expected_cohorts = {"golub", "gse51082", "coustan_smith", "mile"}
+    expected_cohorts = {"golub", "gse51082", "mile"}
     assert set(DOWNLOADERS.keys()) == expected_cohorts

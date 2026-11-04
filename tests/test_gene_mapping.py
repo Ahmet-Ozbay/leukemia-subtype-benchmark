@@ -28,7 +28,6 @@ from src.data.annotations import (
     KEY_BIOMARKERS,
     ProbeCollapser,
     collapse_dataset,
-    extract_coustan_smith_annotations,
     extract_golub_annotations,
     generate_harmonization_report,
     get_shared_gene_symbols,
@@ -47,12 +46,6 @@ def golub_mapping() -> pd.DataFrame:
 def gse51082_mapping() -> pd.DataFrame:
     """Fixture providing GSE51082 GPL96 annotation table."""
     return load_annotation_mapping("gse51082", annotations_dir=ANNOTATIONS_DIR)
-
-
-@pytest.fixture(scope="module")
-def coustan_smith_mapping() -> pd.DataFrame:
-    """Fixture providing Coustan-Smith GPL96 annotation table (deprecated fallback)."""
-    return load_annotation_mapping("coustan_smith", annotations_dir=ANNOTATIONS_DIR)
 
 
 # ==============================================================================
@@ -124,24 +117,10 @@ def test_gse51082_annotation_coverage_and_schema(gse51082_mapping):
         assert len(diff) == 0, f"Unmapped feature probes found in GSE51082: {diff}"
 
 
-def test_coustan_smith_annotation_coverage_and_schema(coustan_smith_mapping):
-    """
-    Verifies that:
-    - GPL96 table contains exactly 22,283 probe sets.
-    - Control probes are flagged as control and unmapped.
-    """
-    assert len(coustan_smith_mapping) == 22283, f"Expected 22283 Coustan-Smith probes, got {len(coustan_smith_mapping)}"
-
-    controls = coustan_smith_mapping[coustan_smith_mapping["probe_id"].str.startswith("AFFX-")]
-    assert len(controls) > 0
-    assert controls["is_control"].all()
-    assert not controls["is_mapped"].any()
-
-
 # ==============================================================================
 # 2. Canonical Leukemia Biomarker Cross-Platform Alignment
 # ==============================================================================
-def test_key_biomarkers_mapped_in_both_cohorts(golub_mapping, coustan_smith_mapping):
+def test_key_biomarkers_mapped_in_both_cohorts(golub_mapping, gse51082_mapping):
     """
     Validates that core clinical biomarkers (CST3, CD33, CD19, MPO, FAH, MME/CD10, LYZ)
     have valid probe mappings in both platforms.
@@ -149,10 +128,10 @@ def test_key_biomarkers_mapped_in_both_cohorts(golub_mapping, coustan_smith_mapp
     for bm in KEY_BIOMARKERS:
         sym = bm["gene_symbol"]
         g_probes = golub_mapping[golub_mapping["gene_symbol"] == sym]["probe_id"].tolist()
-        cs_probes = coustan_smith_mapping[coustan_smith_mapping["gene_symbol"] == sym]["probe_id"].tolist()
+        gse_probes = gse51082_mapping[gse51082_mapping["gene_symbol"] == sym]["probe_id"].tolist()
 
         assert len(g_probes) >= 1, f"Biomarker '{sym}' missing in Golub GPL80 mapping."
-        assert len(cs_probes) >= 1, f"Biomarker '{sym}' missing in Coustan-Smith GPL96 mapping."
+        assert len(gse_probes) >= 1, f"Biomarker '{sym}' missing in GSE51082 GPL96 mapping."
 
     # Verify specific known probe IDs from literature
     # Golub: CST3 is M27891_at, CD33 is M23197_at
@@ -163,13 +142,13 @@ def test_key_biomarkers_mapped_in_both_cohorts(golub_mapping, coustan_smith_mapp
     assert "M23197_at" in cd33_golub
 
 
-def test_shared_gene_overlap(golub_mapping, coustan_smith_mapping):
+def test_shared_gene_overlap(golub_mapping, gse51082_mapping):
     """
-    Verifies that the shared HUGO gene intersection between Golub and Coustan-Smith
-    exceeds 5,000 genes (actual ~5,426 with primary symbol selection).
+    Verifies that the shared HUGO gene intersection between Golub and GSE51082
+    equals exactly 5,428 genes with primary symbol selection.
     """
-    shared = get_shared_gene_symbols(golub_mapping, coustan_smith_mapping)
-    assert len(shared) >= 5000, f"Expected >= 5000 shared genes, got {len(shared)}"
+    shared = get_shared_gene_symbols(golub_mapping, gse51082_mapping)
+    assert len(shared) == 5428, f"Expected 5428 shared genes, got {len(shared)}"
     assert all(isinstance(s, str) and len(s) > 0 for s in shared)
 
 
@@ -366,60 +345,12 @@ def test_harmonize_gse51082_live(golub_mapping, gse51082_mapping):
     assert (HARMONIZED_DATA_DIR / "gse51082_harmonized_genes.parquet").exists()
 
 
-def test_harmonize_cohort_genes_live(golub_mapping, coustan_smith_mapping):
-    """
-    Tests end-to-end cohort harmonization on processed datasets if present on disk.
-    Verifies that harmonized matrices have identical columns in identical order.
-    """
-    g_path = PROBE_DATA_DIR / "golub_full_72.parquet"
-    if not g_path.exists():
-        g_path = PROCESSED_DATA_DIR / "golub_full_72.parquet"
-
-    cs_path = PROBE_DATA_DIR / "coustan_smith_full.parquet"
-    if not cs_path.exists():
-        cs_path = PROCESSED_DATA_DIR / "coustan_smith_full.parquet"
-
-    if not (g_path.exists() and cs_path.exists()):
-        pytest.skip("Processed Golub or Coustan-Smith files not found on disk.")
-
-    golub_df = pd.read_parquet(g_path)
-    cs_df = pd.read_parquet(cs_path)
-
-    g_harm, cs_harm = harmonize_cohort_genes(
-        golub_df=golub_df,
-        coustan_smith_df=cs_df,
-        golub_mapping=golub_mapping,
-        coustan_smith_mapping=coustan_smith_mapping,
-        strategy="max_variance",
-    )
-
-    # Identical columns in exact identical order
-    assert list(g_harm.columns) == list(cs_harm.columns)
-
-    # Sample counts preserved
-    assert len(g_harm) == 72
-    assert len(cs_harm) == 103
-
-    # Feature counts
-    feature_cols = [c for c in g_harm.columns if c not in ["label", "subtype"]]
-    assert len(feature_cols) >= 5000
-
-    # No NaNs or Infs
-    assert not g_harm[feature_cols].isna().any().any()
-    assert not np.isinf(g_harm[feature_cols].to_numpy()).any()
-    assert not cs_harm[feature_cols].isna().any().any()
-    assert not np.isinf(cs_harm[feature_cols].to_numpy()).any()
-
-    # Files must be written to HARMONIZED_DATA_DIR
-    assert (HARMONIZED_DATA_DIR / "golub_harmonized_genes.parquet").exists()
-    assert (HARMONIZED_DATA_DIR / "coustan_smith_harmonized_genes.parquet").exists()
-
-
-def test_generate_harmonization_report_creates_tables(golub_mapping, coustan_smith_mapping):
-    """Verifies that harmonization and biomarker summary tables are created."""
+def test_generate_harmonization_report_creates_tables(golub_mapping, gse51082_mapping):
+    """Verifies that harmonization and biomarker summary tables are created for Golub and GSE51082."""
     tables = generate_harmonization_report(
         golub_mapping=golub_mapping,
-        coustan_smith_mapping=coustan_smith_mapping,
+        secondary_mapping=gse51082_mapping,
+        secondary_name="Agarwal et al. (GSE51082)",
         out_dir=TABLES_DIR,
     )
 
@@ -429,6 +360,7 @@ def test_generate_harmonization_report_creates_tables(golub_mapping, coustan_smi
     assert (TABLES_DIR / "gene_harmonization_summary.md").exists()
     assert (TABLES_DIR / "biomarker_probe_mapping.csv").exists()
     assert (TABLES_DIR / "biomarker_probe_mapping.md").exists()
+    assert "Agarwal et al. (GSE51082)" in tables["summary"].columns
 
 
 def test_load_dataset_api():
