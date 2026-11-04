@@ -48,7 +48,7 @@ python -m src.data.map_genes --collapse --harmonize
 # 4. Generate IEEE conference-ready figures (Grayscale or Academic palette)
 python -m src.visualization.eda --style grayscale
 
-# 5. Run automated test suite (56 unit and invariant verification tests)
+# 5. Run automated test suite (55 unit and invariant verification tests)
 pytest -v
 ```
 
@@ -77,7 +77,7 @@ leukemia-subtype-benchmark/
 │   ├── features/               # Zero-leakage scikit-learn transformers (ProbeCollapser)
 │   ├── models/                 # Model evaluation and nested CV engines (Phase II)
 │   └── visualization/          # Publication-grade EDA plotting and styling engine
-├── tests/                      # Automated unit and invariant test suite (56 tests)
+├── tests/                      # Automated unit and invariant test suite (60 tests)
 ├── environment.yml             # Conda environment specification
 └── requirements.txt            # Pinned pip dependencies
 ```
@@ -242,7 +242,7 @@ df_harm_gse     = load_dataset("gse51082", level="harmonized")          # (66, 5
 
 ### 5. Verification & Automated Testing
 
-A dedicated test suite of 56 automated unit and invariant verification tests (54 passing, 2 integration skips for remote MILE) enforces invariant contracts and verifies data and visualization integrity across all pipeline stages:
+A dedicated test suite of 60 automated unit and invariant verification tests (55 passing, 5 integration skips for remote MILE) enforces invariant contracts and verifies data and visualization integrity across all pipeline stages:
 1. **Dataset Dimensions & Integrity:** Validates expected matrix shapes across splits and cohorts.
 2. **Leakage Prevention:** Asserts disjoint sample IDs across train/test splits, and validates `ProbeCollapser` zero-leakage behavior in scikit-learn pipelines.
 3. **Class Balance Integrity:** Validates ground-truth distributions (*Train: 27 ALL / 11 AML; Test: 20 ALL / 14 AML*).
@@ -259,7 +259,7 @@ pytest -v
 
 ## Exploratory Data Analysis (EDA) & Visualization Engine
 
-The benchmark features a modular visualization engine ([`src/visualization/eda.py`](file:///c:/Users/Ozbay/Desktop/leukemia-subtype-benchmark/src/visualization/eda.py)) and styling framework ([`src/visualization/style.py`](file:///c:/Users/Ozbay/Desktop/leukemia-subtype-benchmark/src/visualization/style.py)) engineered for publication-grade scientific graphics. All figures are dual-exported as 300+ DPI raster PNGs and scalable vector PDFs to `outputs/figures/`.
+The benchmark features a modular visualization engine ([`src/visualization/eda.py`](https://github.com/Ahmet-Ozbay/leukemia-subtype-benchmark/blob/main/src/visualization/eda.py)) and styling framework ([`src/visualization/style.py`](https://github.com/Ahmet-Ozbay/leukemia-subtype-benchmark/blob/main/src/visualization/style.py)) engineered for publication-grade scientific graphics. All figures are dual-exported as 300+ DPI raster PNGs and scalable vector PDFs to `outputs/figures/`.
 
 ### 1. Style Presets & Theming
 
@@ -290,11 +290,11 @@ python -m src.visualization.eda --dataset gse51082 --style academic
 
 | Artifact | Script / Function | Methods & Parameters | Key Scientific Finding |
 |:---|:---|:---|:---|
-| **Figure 1**<br>`fig1_expression_distributions` | `plot_expression_distributions()` | 4-panel KDE distributions pre- and post-$\log_2(x+1)$ transformation on clipped fluorescence across Golub ($n=72$, Hu6800) and GSE51082 ($n=66$, HG-U133A). | Raw Affymetrix arrays exhibit severe right-skewness ($6.03$ Golub, $5.07$ GSE51082). $\log_2(x+1)$ transformation stabilizes skewness to $0.57$ and $0.06$, yielding symmetric Gaussian-like profiles and stabilizing inter-gene variance across platforms. |
+| **Figure 1**<br>`fig1_expression_distributions` | `plot_expression_distributions()` | 4-panel KDE distributions pre- and post-$\log_2(x+1)$ transformation on clipped fluorescence across Golub ($n=72$, Hu6800) and GSE51082 ($n=66$, HG-U133A)(Note: GSE51082's pre-normalized RMA log2 expression values are preserved without raw-intensity clipping). | Raw Affymetrix arrays exhibit severe right-skewness ($6.03$ Golub, $5.07$ GSE51082). $\log_2(x+1)$ transformation stabilizes skewness to $0.57$ and $0.06$, yielding symmetric Gaussian-like profiles and stabilizing inter-gene variance across platforms. |
 | **Figure 2**<br>`fig2_dimensionality_reduction` | `plot_dimensionality_reduction()` | Scree plot (top 15 PCs), 2D PCA ($20.5\%$ top 2 PCs, $51.8\%$ top 15 PCs), 2D t-SNE ($\text{perplexity}=15$, $s=0.28$), 2D UMAP ($\text{metric}=\text{'cosine'}$, $s=0.27$) on Golub ($n=72$). | Linear PCs capture limited variance with partial overlap; however, $k$-NN latent classification improves from $74.8\%$ to $95.8\%$ (silhouette $0.12 \to 0.45$). Non-linear manifolds (t-SNE and UMAP) achieve clean unsupervised cluster separation without label supervision. |
 | **Figure 3**<br>`fig3_top_genes_heatmap` | `plot_top_genes_heatmap()` | Two-sample Welch's $t$-test + Mann-Whitney $U$ test, Benjamini-Hochberg FDR ($p_{\text{FDR}} < 0.001$). Two-way hierarchical clustering (Euclidean, Ward linkage) on top 40 DE genes. | Clustermap dendrogram partitions samples with an Adjusted Rand Index (ARI) of $0.52$, resolving a pure lymphoid cluster (37 B-ALL) and a mixed branch (25 AML, all 9 T-ALL, 1 B-ALL). Data-driven selection recovers canonical markers (*LYZ*, *CST3*, *MPO*, *FAH*, *CD33*, *CD19*, *MME*). |
-| **Figure 4**<br>`fig4_batch_effect_diagnostics` | `plot_batch_effect_diagnostics()` | 4-panel diagnostic: Panel (a) Golub Train ($n=38$) vs Test ($n=34$) covariate shift joint PCA; Panel (b) Cross-cohort Golub ($n=72$) $\leftrightarrow$ GSE51082 ($n=66$) PCA on 5,428 shared genes; Panel (c) GSE51082 tissue confounding contingency (Fisher's exact OR = 1.46, $p=0.743$); Panel (d) GSE51082 6-class global landscape PCA ($n=139$). | Exposes single-split benchmark fragility, confirms cross-platform alignment on 5,428 shared genes, demonstrates biological lineage separation over tissue confounding in GSE51082, and maps the multi-disease hematologic landscape. |
-| **Figure 5**<br>`fig5_tissue_confounding_and_landscape` | `plot_tissue_confounding_and_landscape()` | Standalone diagnostic isolating Panel (a) Bone marrow vs Peripheral blood tissue confounding contingency and odds ratio ($p=0.743$), and Panel (b) 6-class hematologic landscape PCA ($n=139$) with multi-subtype boundary distributions. | Confirms tissue source is independent of leukemia subtype ($p=0.743$, ruling out tissue artifact) and visualizes the broader clinical spectrum across AML, Pre-B ALL, T-ALL, B-CLL, CML, and MDS. |
+| **Figure 4**<br>`fig4_batch_effect_diagnostics` | `plot_batch_effect_diagnostics()` | 4-panel diagnostic: Panel (a) Golub Train ($n=38$) vs Test ($n=34$) covariate shift joint PCA; Panel (b) Cross-cohort Golub ($n=72$) $\leftrightarrow$ GSE51082 ($n=66$) PCA on 5,428 shared genes; Panel (c) GSE51082 tissue confounding contingency (Fisher's exact OR = 1.46, $p=0.743$); Panel (d) GSE51082 6-class global landscape PCA ($n=139$). | Compares the cohort structure across 5,428 shared genes after independent within-cohort standardization. |
+| **Figure 5**<br>`fig5_tissue_confounding_and_landscape` | `plot_tissue_confounding_and_landscape()` | Standalone diagnostic isolating Panel (a) Bone marrow vs Peripheral blood tissue confounding contingency and odds ratio ($p=0.743$), and Panel (b) 6-class hematologic landscape PCA ($n=139$) with multi-subtype boundary distributions. | No statistically significant association between tissue source and leukemia subtype was detected in this cohort (Fisher's exact test, \(p=.743\)). This does not establish the absence of tissue-related confounding. |
 
 ### 4. Programmatic Python API
 
@@ -336,6 +336,6 @@ plt.show()
 
 Detailed methodological formulations, bibliographies, and compliance audits are maintained under `docs/`:
 
-* **`docs/references_verified.md`**: Systematic literature review bibliography containing complete, verified publication metadata and persistent DOI hyperlinks for all 15 benchmarked studies.
+* **`docs/references_verified.md`**: Systematic literature review bibliography containing complete, verified publication metadata and persistent DOI hyperlinks for all the referenced studies.
 * **`docs/genai_log.md`**: **Appendix A** (GenAI Disclosure & Traceability Log) detailing prompt sequences, verification protocols, and human oversight declarations.
 * **`docs/appendix_b_technical_notes.md`**: **Appendix B** (Technical Notes & Mathematical Formulations) detailing the mathematics of probe collapsing, information-theoretic Mutual Information feature selection, and the repeated $5 \times 5$ nested cross-validation protocol.

@@ -2,7 +2,7 @@
 CLI orchestrator for probe-to-gene symbol mapping and cross-platform cohort harmonization.
 
 Executes:
-1. Extraction and persistence of platform annotations (GPL80 for Golub, GPL96 for Armstrong).
+1. Extraction and persistence of platform annotations (GPL80 for Golub, GPL96 for GSE51082).
 2. Cross-platform overlap calculation and biomarker tracking tables (Rubric A3 & F5).
 3. (Optional --collapse) Zero-leakage aggregation into gene-level matrices.
 4. (Optional --harmonize) Alignment to the shared ~5,958 HUGO gene intersection.
