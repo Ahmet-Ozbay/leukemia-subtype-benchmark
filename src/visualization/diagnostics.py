@@ -99,14 +99,13 @@ def render_cross_platform_pca(
     df_harm_primary: pd.DataFrame,
     df_harm_secondary: pd.DataFrame,
     style_cfg: Dict[str, Any],
-    sec_name: str = "Agarwal (GSE51082)",
+    sec_name: str = "GSE51082",
 ) -> Tuple[float, float]:
-    """Renders Panel B: Cross-Platform Harmonization PCA on shared genes."""
+    """Renders Panel B: Cross-Platform Harmonization PCA on shared genes colored by biological subtype."""
     palette = style_cfg["palette"]
-    markers = style_cfg["markers"]
 
-    X_p_raw, _ = get_feature_and_label_matrices(df_harm_primary)
-    X_s_raw, _ = get_feature_and_label_matrices(df_harm_secondary)
+    X_p_raw, y_p = get_feature_and_label_matrices(df_harm_primary)
+    X_s_raw, y_s = get_feature_and_label_matrices(df_harm_secondary)
 
     # Standardize primary (log2 transformed if raw) and secondary (already log2 RMA)
     X_p_s = StandardScaler().fit_transform(np.log2(np.maximum(X_p_raw.to_numpy(dtype=float), 0) + 1.0))
@@ -123,31 +122,65 @@ def render_cross_platform_pca(
     n_p = len(df_harm_primary)
     n_s = len(df_harm_secondary)
 
-    sec_color = palette.get("GSE51082", palette.get("Coustan-Smith", "#888888"))
-    sec_marker = markers.get("GSE51082", markers.get("Coustan-Smith", "D"))
+    color_all = palette.get(0, palette.get("ALL", "#333333"))
+    color_aml = palette.get(1, palette.get("AML", "#999999"))
 
+    coords_p = X_cross_pca[:n_p]
+    coords_s = X_cross_pca[n_p:]
+
+    mask_p_all = (y_p.values == 0)
+    mask_p_aml = (y_p.values == 1)
+    mask_s_all = (y_s.values == 0)
+    mask_s_aml = (y_s.values == 1)
+
+    # Plot Golub samples (circle marker)
     ax.scatter(
-        X_cross_pca[:n_p, 0],
-        X_cross_pca[:n_p, 1] if n_comp >= 2 else np.zeros(n_p),
-        c=palette.get("Golub", "#222222"),
-        marker=markers.get("Golub", "o"),
-        label=f"Golub (Hu6800, n = {n_p})",
-        alpha=0.8,
+        coords_p[mask_p_all, 0],
+        coords_p[mask_p_all, 1] if n_comp >= 2 else np.zeros(mask_p_all.sum()),
+        c=color_all,
+        marker="o",
+        label="Golub ALL (n=47)",
+        alpha=0.85,
         s=30,
         edgecolor="black",
         linewidth=0.5,
     )
     ax.scatter(
-        X_cross_pca[n_p:, 0],
-        X_cross_pca[n_p:, 1] if n_comp >= 2 else np.zeros(n_s),
-        c=sec_color,
-        marker=sec_marker,
-        label=f"{sec_name} (GPL96, n = {n_s})",
-        alpha=0.8,
+        coords_p[mask_p_aml, 0],
+        coords_p[mask_p_aml, 1] if n_comp >= 2 else np.zeros(mask_p_aml.sum()),
+        c=color_aml,
+        marker="o",
+        label="Golub AML (n=25)",
+        alpha=0.85,
         s=30,
         edgecolor="black",
         linewidth=0.5,
     )
+
+    # Plot GSE51082 samples (diamond marker)
+    ax.scatter(
+        coords_s[mask_s_all, 0],
+        coords_s[mask_s_all, 1] if n_comp >= 2 else np.zeros(mask_s_all.sum()),
+        c=color_all,
+        marker="D",
+        label=f"{sec_name} ALL (n=29)",
+        alpha=0.85,
+        s=28,
+        edgecolor="black",
+        linewidth=0.5,
+    )
+    ax.scatter(
+        coords_s[mask_s_aml, 0],
+        coords_s[mask_s_aml, 1] if n_comp >= 2 else np.zeros(mask_s_aml.sum()),
+        c=color_aml,
+        marker="D",
+        label=f"{sec_name} AML (n=37)",
+        alpha=0.85,
+        s=28,
+        edgecolor="black",
+        linewidth=0.5,
+    )
+
     shared_genes_count = X_p_raw.shape[1]
     ax.set_title(f"(b) Cross-Platform Harmonization ({shared_genes_count:,} Genes)", fontweight="bold", fontsize=8, pad=18)
     ax.set_xlabel(f"PC1 ({pc1_var:.1f}%)", fontsize=7.5)
@@ -157,7 +190,7 @@ def render_cross_platform_pca(
         bbox_to_anchor=(0.5, 1.01),
         ncol=2,
         frameon=False,
-        fontsize=6.8,
+        fontsize=6.2,
     )
 
     return pc1_var, pc2_var
