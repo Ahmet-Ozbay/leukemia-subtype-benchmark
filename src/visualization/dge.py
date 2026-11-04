@@ -183,6 +183,7 @@ def plot_top_genes_heatmap(
 
     g.ax_heatmap.set_ylabel("HUGO Gene Symbol", fontsize=8.5)
     g.ax_heatmap.set_xlabel(f"Patient Samples (n = {len(df)})", fontsize=8.5)
+    g.ax_heatmap.tick_params(axis="y", labelsize=7.5, pad=2)
 
     return g
 

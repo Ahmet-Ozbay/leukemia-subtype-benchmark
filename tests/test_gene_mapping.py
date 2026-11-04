@@ -353,7 +353,7 @@ def test_harmonize_gse51082_live(golub_mapping, gse51082_mapping):
 
     # Feature counts
     feature_cols = [c for c in g_harm.columns if c not in ["label", "subtype"]]
-    assert len(feature_cols) == 5426
+    assert len(feature_cols) == 5428
 
     # No NaNs or Infs
     assert not g_harm[feature_cols].isna().any().any()
@@ -455,12 +455,12 @@ def test_load_dataset_api():
     gse_genes = load_dataset("gse51082", level="genes")
     assert gse_genes.shape[0] == 66
 
-    # Harmonized level
+    # Harmonized level (5428 shared genes + 2 metadata columns: label, subtype)
     g_harm = load_dataset("golub", level="harmonized")
     gse_harm = load_dataset("gse51082", level="harmonized")
     assert list(g_harm.columns) == list(gse_harm.columns)
-    assert g_harm.shape == (72, 5428)
-    assert gse_harm.shape == (66, 5428)
+    assert g_harm.shape == (72, 5430)
+    assert gse_harm.shape == (66, 5430)
 
     # Invalid arguments raise ValueError
     with pytest.raises(ValueError, match="Unknown cohort"):

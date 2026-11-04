@@ -31,6 +31,31 @@ def clean_symbol(val: any) -> str:
     return s
 
 
+def extract_primary_symbol_and_entrez(raw_sym: str, raw_entrez: str) -> tuple[str, str]:
+    """
+    Extracts primary gene symbol and corresponding Entrez ID.
+    If multiple symbols are present (separated by '///'), prioritizes official
+    HUGO symbols over uncharacterized LOC... identifiers.
+    """
+    if not raw_sym:
+        return "", ""
+    parts = [p.strip() for p in raw_sym.split("///") if p.strip()]
+    entrez_parts = [p.strip() for p in raw_entrez.split("///") if p.strip()] if raw_entrez else []
+
+    canonical_indices = [i for i, p in enumerate(parts) if not p.upper().startswith("LOC")]
+    if canonical_indices:
+        idx = canonical_indices[0]
+        sym = parts[idx]
+        eid = entrez_parts[idx] if idx < len(entrez_parts) else (entrez_parts[0] if entrez_parts else "")
+    elif parts:
+        sym = parts[0]
+        eid = entrez_parts[0] if entrez_parts else ""
+    else:
+        sym = ""
+        eid = ""
+    return sym, eid
+
+
 def parse_gpl80_annotations(
     gpl_path: Optional[Path] = None,
     drop_multi_mapped: bool = False,
@@ -58,14 +83,14 @@ def parse_gpl80_annotations(
         is_multi = "///" in raw_sym
         is_ctrl = probe_id.startswith("AFFX-") or probe_id == "hum_alu_at"
 
+        raw_entrez = clean_symbol(row.get("ENTREZ_GENE_ID", ""))
+        gene_title = clean_symbol(row.get("Gene Title", ""))
+
         if drop_multi_mapped and is_multi:
             gene_symbol = ""
+            entrez_id = ""
         else:
-            gene_symbol = raw_sym.split("///")[0].strip() if raw_sym else ""
-
-        raw_entrez = clean_symbol(row.get("ENTREZ_GENE_ID", ""))
-        entrez_id = raw_entrez.split("///")[0].strip() if raw_entrez else ""
-        gene_title = clean_symbol(row.get("Gene Title", ""))
+            gene_symbol, entrez_id = extract_primary_symbol_and_entrez(raw_sym, raw_entrez)
 
         is_mapped = bool(gene_symbol and not is_ctrl)
 
@@ -119,14 +144,14 @@ def parse_gpl96_annotations(
         is_multi = "///" in raw_sym
         is_ctrl = probe_id.startswith("AFFX-")
 
+        raw_entrez = clean_symbol(row.get("ENTREZ_GENE_ID", ""))
+        gene_title = clean_symbol(row.get("Gene Title", ""))
+
         if drop_multi_mapped and is_multi:
             gene_symbol = ""
+            entrez_id = ""
         else:
-            gene_symbol = raw_sym.split("///")[0].strip() if raw_sym else ""
-
-        raw_entrez = clean_symbol(row.get("ENTREZ_GENE_ID", ""))
-        entrez_id = raw_entrez.split("///")[0].strip() if raw_entrez else ""
-        gene_title = clean_symbol(row.get("Gene Title", ""))
+            gene_symbol, entrez_id = extract_primary_symbol_and_entrez(raw_sym, raw_entrez)
 
         is_mapped = bool(gene_symbol and not is_ctrl)
 

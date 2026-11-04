@@ -41,6 +41,23 @@ This document is prepared in accordance with the Semester Project Guide (Section
 - **Model Output Summary:** Decomposed `eda.py` into `distributions.py`, `dimensionality.py`, `dge.py`, `diagnostics.py`, and `utils.py`; added `save_figure` to `style.py`; updated `__init__.py` with public package exports; refactored `eda.py` into a lightweight CLI facade (~120 lines); expanded `tests/test_eda.py` with 8 comprehensive unit and regression tests.
 - **Student Verification:** Executed automated unit test suite (`pytest tests/test_eda.py`) with 8 passing tests, ran end-to-end regression generating Figures 1–5 in PNG and vector PDF at 300 DPI, and verified zero regressions across CLI parameters.
 
+### Session 7: AI Peer Review Remediation, Canonical Gene Mapping, Statistical Reconciliation, and 6-Page Budget Finalization
+- **User Prompt Summary:** Systematically remediate all 23 critical, major, and minor issues raised in the AI peer review (`ai_review_of_critical_issues.md`) generated via Anthropic Claude (Sonnet 3.5 / 5.5). Reconcile all statistical inconsistencies, update probe-to-gene mapping to prioritize canonical HUGO symbols (replacing uninformative `LOC101928620` with `POU2AF1` in Figure 3), recompute exact clustermap purity metrics (ARI = 0.52), report GSE51082 effect sizes with 95% CIs, quantify concordance statistics (top 50 hypergeometric test, genome-wide Spearman rank correlation), clarify top-100 PCA variance concentration, report Fisher's exact test tissue odds ratio direction and Woolf CI, correct literature Table I citations and study descriptions, refine RQ3 into testable sub-questions (RQ3a, RQ3b, RQ3c), cite primary CC0/Whitehead data licenses, disclaim GenAI models used, and compress the compiled IEEE manuscript (`main.tex`) to strictly $\le 6$ pages.
+- **Model Output Summary:** 
+  1. Updated `src/data/annotations/gpl_parser.py` (`extract_primary_symbol_and_entrez`) to resolve multi-symbol entries by prioritizing canonical HUGO symbols over uninformative `LOC...` accessions, correctly mapping probe `Z49194_at` and `205267_at` to `POU2AF1` (OCT-binding factor 1 / Bob1 / OBF-1). Re-ran gene mapping: Golub 5,547 unique genes, GSE51082 13,216 unique genes, 5,428 shared genes.
+  2. Updated `src/visualization/dge.py` to optimize heatmap gene label typography (`labelsize=7.5`, `pad=2`), and regenerated Figures 1–5 in PNG and vector PDF.
+  3. Recomputed all empirical statistics from data matrices:
+     - Clustermap Adjusted Rand Index = 0.52 (specifically 0.5154; pure lymphoid cluster of 37 B-ALL vs. myeloid cluster of 25 AML + 10 ALL).
+     - Cross-platform concordance: 9 shared genes in top 50, hypergeometric test $p = 4.25 \times 10^{-10}$; genome-wide Spearman rank correlation $\rho = 0.407$ ($p = 3.98 \times 10^{-215}$).
+     - GSE51082 AML effect sizes: CST3 ($\log_2\text{FC} = +3.25$ [95% CI: 2.75, 3.75], $p_{\text{FDR}} = 2.26 \times 10^{-16}$), CD33 ($\log_2\text{FC} = +1.99$ [1.75, 2.23], $p_{\text{FDR}} = 5.68 \times 10^{-22}$), MPO ($\log_2\text{FC} = +2.81$ [1.76, 3.86], $p_{\text{FDR}} = 6.40 \times 10^{-6}$), CD19 ($\log_2\text{FC} = -1.96$ [-2.67, -1.26], $p_{\text{FDR}} = 1.45 \times 10^{-5}$).
+     - Full vs. Top-100 PCA: PC1 24.7%, PC2 11.4% (Cum 15: 77.7%) vs. unprojected full space PC1 11.9%, PC2 8.6% (Cum 15: 51.8%).
+     - Tissue confounding: Peripheral Blood odds ratio in AML relative to ALL = 1.46 (Woolf 95% CI: [0.38, 5.56], $p = 0.743$).
+     - Platform alignment: PC1 separates ALL/AML in Golub ($t=5.33, p=3.61 \times 10^{-6}$, AUC=0.823) and GSE51082 ($t=8.44, p=1.12 \times 10^{-9}$, AUC=0.957).
+  4. Rectified all literature Table I and text entries (Golub clipping [100, 16,000], Dudoit 200 random 2:1 splits, Molla van 't Veer breast cancer re-analysis tutorial, Cawley finite sample CV bias up to 8%–10%, Fauzi 3-class GEMS leukemia, Hoang ensemble PCA ambiguity).
+  5. Refined RQ3 into RQ3a (Secondary Internal Validity), RQ3b (Bidirectional Transfer), and RQ3c (Multicenter MILE Transfer).
+  6. Compacted IEEE conference manuscript formatting via `\BIBdecl` hook and streamlined prose, achieving clean compilation with `pdflatex` to **strictly 6 pages** (including all 34 references, 4 figures, and 4 tables).
+- **Student Verification:** Verified all 60 unit and integration tests (`pytest tests/ -v`: 55 passed, 5 skipped for remote data, 0 failed), inspected PDF page count (`Output written on main.pdf (6 pages)`), and confirmed all 23 reviewer criticisms are fully resolved.
+
 
 ## 3. Originality and Ethics Statement
 The experimental hypotheses, methodology design, research questions, code verification, and final paper conclusions remain the intellectual and scientific responsibility of the author.
