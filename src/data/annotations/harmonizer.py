@@ -1,5 +1,5 @@
 """
-Cross-platform gene harmonization and biomarker reporting for Golub and Coustan-Smith cohorts.
+Cross-platform gene harmonization and biomarker reporting for Golub and GSE51082 cohorts.
 Aligns feature spaces to common HUGO gene symbols and outputs verification tables.
 """
 
@@ -86,8 +86,7 @@ def get_shared_gene_symbols(
 
 def generate_harmonization_report(
     golub_mapping: pd.DataFrame,
-    secondary_mapping: Optional[pd.DataFrame] = None,
-    coustan_smith_mapping: Optional[pd.DataFrame] = None,
+    secondary_mapping: pd.DataFrame,
     secondary_name: str = "Agarwal et al. (GSE51082)",
     out_dir: Path = TABLES_DIR,
 ) -> Dict[str, pd.DataFrame]:
@@ -95,13 +94,6 @@ def generate_harmonization_report(
     Generates and persists side-by-side harmonization specification tables (Rubric A3 & F5)
     and canonical leukemia biomarker mapping tables.
     """
-    if secondary_mapping is None:
-        if coustan_smith_mapping is not None:
-            secondary_mapping = coustan_smith_mapping
-            secondary_name = "Coustan-Smith et al. (GSE28497)"
-        else:
-            raise ValueError("Either secondary_mapping (GSE51082) or coustan_smith_mapping must be provided.")
-
     out_dir.mkdir(parents=True, exist_ok=True)
 
     shared_genes = get_shared_gene_symbols(golub_mapping, secondary_mapping)
@@ -202,11 +194,9 @@ def generate_harmonization_report(
 
 def harmonize_cohort_genes(
     golub_df: pd.DataFrame,
-    secondary_df: Optional[pd.DataFrame] = None,
-    golub_mapping: Optional[pd.DataFrame] = None,
-    secondary_mapping: Optional[pd.DataFrame] = None,
-    coustan_smith_df: Optional[pd.DataFrame] = None,
-    coustan_smith_mapping: Optional[pd.DataFrame] = None,
+    secondary_df: pd.DataFrame,
+    golub_mapping: pd.DataFrame,
+    secondary_mapping: pd.DataFrame,
     secondary_name: str = "gse51082",
     strategy: str = "max_variance",
     drop_multi_mapped: bool = False,
@@ -216,19 +206,6 @@ def harmonize_cohort_genes(
     Collapses both cohorts to gene symbols using zero-leakage aggregation and harmonizes
     feature space strictly to the common gene intersection.
     """
-    if secondary_df is None:
-        if coustan_smith_df is not None:
-            secondary_df = coustan_smith_df
-            secondary_name = "coustan_smith"
-        else:
-            raise ValueError("Either secondary_df or coustan_smith_df must be provided.")
-
-    if secondary_mapping is None:
-        if coustan_smith_mapping is not None:
-            secondary_mapping = coustan_smith_mapping
-        else:
-            raise ValueError("Either secondary_mapping or coustan_smith_mapping must be provided.")
-
     shared_genes = get_shared_gene_symbols(golub_mapping, secondary_mapping)
     print(f"[*] Harmonizing cohorts on {len(shared_genes)} shared HUGO gene symbols (Strategy: {strategy})...")
 

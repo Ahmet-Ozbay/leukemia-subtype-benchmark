@@ -36,7 +36,6 @@ from src.config import (
 )
 from src.data.annotations import (
     collapse_dataset,
-    extract_coustan_smith_annotations,
     extract_golub_annotations,
     extract_gse51082_annotations,
     generate_harmonization_report,
@@ -57,7 +56,6 @@ def run_mapping_pipeline(
 
     golub_mapping = None
     gse51082_mapping = None
-    coustan_smith_mapping = None
 
     # 1. Extraction of annotations
     if target in ("golub", "all"):
@@ -74,13 +72,6 @@ def run_mapping_pipeline(
             drop_multi_mapped=drop_multi_mapped,
         )
 
-    if target in ("coustan_smith",):
-        print("\n[*] Step 1C: Extracting Coustan-Smith et al. (HG-U133A / GPL96) annotations (Deprecated)...")
-        coustan_smith_mapping = extract_coustan_smith_annotations(
-            out_dir=ANNOTATIONS_DIR,
-            drop_multi_mapped=drop_multi_mapped,
-        )
-
     # 2. Harmonization report and biomarker tracking
     if golub_mapping is not None and gse51082_mapping is not None:
         print("\n[*] Step 2: Generating cross-platform harmonization & biomarker reports (Golub <-> GSE51082)...")
@@ -88,14 +79,6 @@ def run_mapping_pipeline(
             golub_mapping=golub_mapping,
             secondary_mapping=gse51082_mapping,
             secondary_name="Agarwal et al. (GSE51082)",
-            out_dir=TABLES_DIR,
-        )
-    elif golub_mapping is not None and coustan_smith_mapping is not None:
-        print("\n[*] Step 2: Generating cross-platform harmonization & biomarker reports (Golub <-> Coustan-Smith)...")
-        generate_harmonization_report(
-            golub_mapping=golub_mapping,
-            secondary_mapping=coustan_smith_mapping,
-            secondary_name="Coustan-Smith et al. (GSE28497)",
             out_dir=TABLES_DIR,
         )
 
@@ -165,25 +148,11 @@ def run_mapping_pipeline(
                 c_eda.to_parquet(GENE_DATA_DIR / "gse51082_full_eda_genes.parquet")
                 print(f"    [+] Saved: {GENE_DATA_DIR.name}/gse51082_full_eda_genes.parquet (Shape: {c_eda.shape})")
 
-        if target in ("coustan_smith",) and coustan_smith_mapping is not None:
-            cs_p = _locate_probe_file("coustan_smith_full.parquet")
-            if cs_p.exists():
-                cs_df = pd.read_parquet(cs_p)
-                c_cs, _ = collapse_dataset(
-                    train_df=cs_df,
-                    mapping_df=coustan_smith_mapping,
-                    strategy=strategy,
-                    drop_multi_mapped=drop_multi_mapped,
-                )
-                c_cs.to_parquet(GENE_DATA_DIR / "coustan_smith_full_genes.parquet")
-                print(f"    [+] Saved: {GENE_DATA_DIR.name}/coustan_smith_full_genes.parquet (Shape: {c_cs.shape})")
-
     # 4. Optional Cross-Platform Harmonization
     if do_harmonize:
         print("\n[*] Step 4: Harmonizing cohorts on shared HUGO gene symbols...")
         golub_full_p = _locate_probe_file("golub_full_72.parquet")
         gse_aml_p = _locate_probe_file("gse51082_all_aml.parquet")
-        cs_full_p = _locate_probe_file("coustan_smith_full.parquet")
 
         if golub_full_p.exists() and gse_aml_p.exists() and golub_mapping is not None and gse51082_mapping is not None:
             golub_df = pd.read_parquet(golub_full_p)
@@ -194,19 +163,6 @@ def run_mapping_pipeline(
                 golub_mapping=golub_mapping,
                 secondary_mapping=gse51082_mapping,
                 secondary_name="gse51082",
-                strategy=strategy,
-                drop_multi_mapped=drop_multi_mapped,
-                out_dir=HARMONIZED_DATA_DIR,
-            )
-        elif golub_full_p.exists() and cs_full_p.exists() and golub_mapping is not None and coustan_smith_mapping is not None:
-            golub_df = pd.read_parquet(golub_full_p)
-            coustan_smith_df = pd.read_parquet(cs_full_p)
-            harmonize_cohort_genes(
-                golub_df=golub_df,
-                secondary_df=coustan_smith_df,
-                golub_mapping=golub_mapping,
-                secondary_mapping=coustan_smith_mapping,
-                secondary_name="coustan_smith",
                 strategy=strategy,
                 drop_multi_mapped=drop_multi_mapped,
                 out_dir=HARMONIZED_DATA_DIR,
@@ -225,9 +181,9 @@ def main():
         "--dataset",
         "--target",
         dest="dataset",
-        choices=["golub", "gse51082", "coustan_smith", "all"],
+        choices=["golub", "gse51082", "all"],
         default="all",
-        help="Target cohort for annotation extraction: 'golub', 'gse51082', 'coustan_smith', or 'all' (default).",
+        help="Target cohort for annotation extraction: 'golub', 'gse51082', or 'all' (default).",
     )
     parser.add_argument(
         "--strategy",
@@ -248,7 +204,7 @@ def main():
     parser.add_argument(
         "--harmonize",
         action="store_true",
-        help="Harmonize Golub and Coustan-Smith into identical shared-gene feature matrices.",
+        help="Harmonize Golub and GSE51082 into identical shared-gene feature matrices.",
     )
     args = parser.parse_args()
 

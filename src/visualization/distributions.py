@@ -77,7 +77,7 @@ def plot_expression_distributions(
 
     palette = style_cfg["palette"]
     golub_color = palette.get("Golub", "#222222")
-    gse_color = palette.get("GSE51082", palette.get("Coustan-Smith", "#888888"))
+    gse_color = palette.get("GSE51082", "#888888")
 
     # (a) Golub Raw
     sns.histplot(

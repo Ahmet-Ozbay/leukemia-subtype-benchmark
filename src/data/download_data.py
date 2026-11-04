@@ -1,6 +1,6 @@
 """
 Automated dataset acquisition pipeline for Leukemia Subtype Benchmark.
-Downloads Golub (Kaggle), Coustan-Smith et al. (GEO GSE28497), and MILE (GEO GSE13159).
+Downloads Golub (Kaggle), GSE51082 (Agarwal et al., GEO), and MILE (GEO GSE13159).
 Fulfills Rubric F9 for reproducible execution without committing raw data.
 """
 
@@ -173,7 +173,6 @@ DOWNLOADERS = {
     "golub": lambda force: download_golub("crawford/gene-expression", "golub", RAW_DATA_DIR, force=force),
     "gse51082": lambda force: download_gse51082(RAW_DATA_DIR, force=force),
     "mile": lambda force: download_geo("GSE13159", "mile_study", RAW_DATA_DIR, force=force),
-    "coustan_smith": lambda force: download_geo("GSE28497", "coustan_smith", RAW_DATA_DIR, force=force),
 }
 
 
@@ -185,7 +184,7 @@ def main():
         "--dataset",
         choices=list(DOWNLOADERS.keys()) + ["all"],
         default="all",
-        help="Target dataset: 'golub', 'gse51082' (Agarwal et al. 2014), 'mile' (GSE13159), 'coustan_smith' (deprecated), or 'all' (default).",
+        help="Target dataset: 'golub', 'gse51082' (Agarwal et al. 2014), 'mile' (GSE13159), or 'all' (default).",
     )
     parser.add_argument(
         "--force",

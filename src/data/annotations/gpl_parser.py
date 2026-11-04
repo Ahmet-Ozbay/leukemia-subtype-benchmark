@@ -235,26 +235,6 @@ def extract_gse51082_annotations(
     return df
 
 
-def extract_coustan_smith_annotations(
-    out_dir: Path = ANNOTATIONS_DIR,
-    drop_multi_mapped: bool = False,
-) -> pd.DataFrame:
-    """
-    Extracts Coustan-Smith (GPL96) probe mapping and persists to Parquet and CSV.
-    Deprecated: Kept for backward compatibility.
-    """
-    out_dir.mkdir(parents=True, exist_ok=True)
-    df = parse_gpl96_annotations(drop_multi_mapped=drop_multi_mapped)
-
-    parquet_path = out_dir / "coustan_smith_probe_to_gene.parquet"
-    csv_path = out_dir / "coustan_smith_probe_to_gene.csv"
-    df.to_parquet(parquet_path, index=False)
-    df.to_csv(csv_path, index=False)
-
-    print(f"    [+] Saved Coustan-Smith annotations: {parquet_path.name} ({len(df)} probes, {df['is_mapped'].sum()} mapped)")
-    return df
-
-
 def load_annotation_mapping(
     cohort: str,
     annotations_dir: Path = ANNOTATIONS_DIR,
@@ -276,7 +256,5 @@ def load_annotation_mapping(
         return extract_golub_annotations(out_dir=annotations_dir, drop_multi_mapped=drop_multi_mapped)
     elif cohort == "gse51082":
         return extract_gse51082_annotations(out_dir=annotations_dir, drop_multi_mapped=drop_multi_mapped)
-    elif cohort == "coustan_smith":
-        return extract_coustan_smith_annotations(out_dir=annotations_dir, drop_multi_mapped=drop_multi_mapped)
     else:
-        raise ValueError(f"Unknown cohort '{cohort}'. Supported: 'golub', 'gse51082', 'coustan_smith'.")
+        raise ValueError(f"Unknown cohort '{cohort}'. Supported: 'golub', 'gse51082'.")

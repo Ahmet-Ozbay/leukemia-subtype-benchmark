@@ -27,13 +27,13 @@ def load_dataset(
     Loads a standardized Parquet dataset for a specific cohort and feature abstraction level.
 
     Parameters:
-        cohort: Target cohort: 'golub', 'coustan_smith', or 'mile'.
+        cohort: Target cohort: 'golub', 'gse51082', or 'mile'.
         level: Feature abstraction level:
             - 'probes': Raw-cleaned probe-level matrix (p >> n).
             - 'genes': Cohort-specific collapsed HUGO gene-level matrix.
             - 'harmonized': Cross-platform harmonized matrix on shared gene intersection.
-        split: Partition to load (primarily for Golub):
-            - 'full': Combined cohort (e.g. n=72 for Golub, n=103 for Coustan-Smith).
+        split: Partition to load:
+            - 'full': Combined cohort (e.g. n=72 for Golub, n=66/139 for GSE51082).
             - 'train': Primary training partition (e.g. n=38 for Golub).
             - 'test': Primary independent test partition (e.g. n=34 for Golub).
 
@@ -44,8 +44,8 @@ def load_dataset(
     level = level.lower().strip()
     split = split.lower().strip()
 
-    if cohort not in ("golub", "gse51082", "coustan_smith", "mile"):
-        raise ValueError(f"Unknown cohort '{cohort}'. Supported: 'golub', 'gse51082', 'coustan_smith', 'mile'.")
+    if cohort not in ("golub", "gse51082", "mile"):
+        raise ValueError(f"Unknown cohort '{cohort}'. Supported: 'golub', 'gse51082', 'mile'.")
 
     if level not in ("probes", "genes", "harmonized"):
         raise ValueError(f"Unknown level '{level}'. Supported: 'probes', 'genes', 'harmonized'.")

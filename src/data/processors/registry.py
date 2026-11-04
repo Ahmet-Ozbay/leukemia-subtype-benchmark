@@ -11,7 +11,6 @@ from typing import Dict, Type
 import pandas as pd
 
 from src.data.processors.base import BaseDatasetProcessor
-from src.data.processors.coustan_smith import CoustanSmithProcessor  # Deprecated
 from src.data.processors.golub import GolubProcessor
 from src.data.processors.gse51082 import GSE51082Processor
 from src.data.processors.mile import MileProcessor
@@ -19,7 +18,6 @@ from src.data.processors.mile import MileProcessor
 DATASET_REGISTRY: Dict[str, Type[BaseDatasetProcessor]] = {
     "golub": GolubProcessor,
     "gse51082": GSE51082Processor,
-    "coustan_smith": CoustanSmithProcessor,
     "mile": MileProcessor,
 }
 

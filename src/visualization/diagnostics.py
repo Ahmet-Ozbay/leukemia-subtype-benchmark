@@ -413,14 +413,8 @@ def generate_figure_4(
     df_train = load_dataset("golub", level="genes", split="train")
     df_test = load_dataset("golub", level="genes", split="test")
     df_harm_g = load_dataset("golub", level="harmonized")
-
-    try:
-        df_harm_sec = load_dataset("gse51082", level="harmonized")
-        sec_name = "Agarwal (GSE51082)"
-    except FileNotFoundError:
-        df_harm_sec = load_dataset("coustan_smith", level="harmonized")
-        sec_name = "Coustan-Smith (GSE28497)"
-
+    df_harm_sec = load_dataset("gse51082", level="harmonized")
+    sec_name = "Agarwal (GSE51082)"
     df_eda = load_dataset("gse51082", level="probes", split="full_eda")
 
     fig = plot_batch_effect_diagnostics(
