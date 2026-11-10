@@ -80,7 +80,7 @@ def render_train_test_shift(
         edgecolor="black",
         linewidth=0.5,
     )
-    ax.set_title("(a) Golub Train vs. Independent Test Shift", fontweight="bold", fontsize=8, pad=18)
+    ax.set_title("(a) Golub Train vs. Independent Test Shift", fontweight="bold", fontsize=8, pad=30)
     ax.set_xlabel(f"PC1 ({pc1_var:.1f}%)", fontsize=7.5)
     ax.set_ylabel(f"PC2 ({pc2_var:.1f}%)", fontsize=7.5)
     ax.legend(
@@ -182,7 +182,7 @@ def render_cross_platform_pca(
     )
 
     shared_genes_count = X_p_raw.shape[1]
-    ax.set_title(f"(b) Cross-Platform Harmonization ({shared_genes_count:,} Genes)", fontweight="bold", fontsize=8, pad=18)
+    ax.set_title(f"(b) Cross-Platform Harmonization ({shared_genes_count:,} Genes)", fontweight="bold", fontsize=8, pad=30)
     ax.set_xlabel(f"PC1 ({pc1_var:.1f}%)", fontsize=7.5)
     ax.set_ylabel(f"PC2 ({pc2_var:.1f}%)", fontsize=7.5)
     ax.legend(
